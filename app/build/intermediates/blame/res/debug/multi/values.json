@@ -1,0 +1,121 @@
+[
+    {
+        "outputFile": "C:\\Users\\zozo\\AndroidStudioProjects\\achartengine\\app\\build\\intermediates\\res\\merged\\debug\\values\\values.xml",
+        "map": [
+            {
+                "to": {
+                    "startLine": 2,
+                    "startColumn": 4,
+                    "startOffset": 55,
+                    "endColumn": 35,
+                    "endOffset": 86
+                },
+                "from": {
+                    "file": "C:\\Users\\zozo\\AndroidStudioProjects\\achartengine\\app\\src\\main\\res\\values\\strings.xml",
+                    "position": {
+                        "startLine": 6,
+                        "startColumn": 1,
+                        "startOffset": 228,
+                        "endColumn": 32,
+                        "endOffset": 259
+                    }
+                }
+            },
+            {
+                "to": {
+                    "startLine": 3,
+                    "startColumn": 4,
+                    "startOffset": 91,
+                    "endColumn": 62,
+                    "endOffset": 149
+                },
+                "from": {
+                    "file": "C:\\Users\\zozo\\AndroidStudioProjects\\achartengine\\app\\src\\main\\res\\values\\strings.xml",
+                    "position": {
+                        "startLine": 3,
+                        "startColumn": 1,
+                        "startOffset": 102,
+                        "endColumn": 59,
+                        "endOffset": 160
+                    }
+                }
+            },
+            {
+                "to": {
+                    "startLine": 4,
+                    "startColumn": 4,
+                    "startOffset": 154,
+                    "endColumn": 49,
+                    "endOffset": 199
+                },
+                "from": {
+                    "file": "C:\\Users\\zozo\\AndroidStudioProjects\\achartengine\\app\\src\\main\\res\\values\\strings.xml",
+                    "position": {
+                        "startLine": 2,
+                        "startColumn": 4,
+                        "startOffset": 55,
+                        "endColumn": 49,
+                        "endOffset": 100
+                    }
+                }
+            },
+            {
+                "to": {
+                    "startLine": 5,
+                    "startColumn": 4,
+                    "startOffset": 204,
+                    "endColumn": 49,
+                    "endOffset": 249
+                },
+                "from": {
+                    "file": "C:\\Users\\zozo\\AndroidStudioProjects\\achartengine\\app\\src\\main\\res\\values\\strings.xml",
+                    "position": {
+                        "startLine": 7,
+                        "startColumn": 1,
+                        "startOffset": 261,
+                        "endColumn": 46,
+                        "endOffset": 306
+                    }
+                }
+            },
+            {
+                "to": {
+                    "startLine": 6,
+                    "startColumn": 4,
+                    "startOffset": 254,
+                    "endColumn": 31,
+                    "endOffset": 281
+                },
+                "from": {
+                    "file": "C:\\Users\\zozo\\AndroidStudioProjects\\achartengine\\app\\src\\main\\res\\values\\strings.xml",
+                    "position": {
+                        "startLine": 4,
+                        "startColumn": 1,
+                        "startOffset": 166,
+                        "endColumn": 28,
+                        "endOffset": 193
+                    }
+                }
+            },
+            {
+                "to": {
+                    "startLine": 7,
+                    "startColumn": 4,
+                    "startOffset": 286,
+                    "endColumn": 31,
+                    "endOffset": 313
+                },
+                "from": {
+                    "file": "C:\\Users\\zozo\\AndroidStudioProjects\\achartengine\\app\\src\\main\\res\\values\\strings.xml",
+                    "position": {
+                        "startLine": 5,
+                        "startColumn": 1,
+                        "startOffset": 199,
+                        "endColumn": 28,
+                        "endOffset": 226
+                    }
+                }
+            }
+        ]
+    }
+]
