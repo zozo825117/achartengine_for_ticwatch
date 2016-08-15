@@ -19,6 +19,7 @@ import org.achartengine.chart.AbstractChart;
 
 import android.app.Activity;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.Window;
 
 /**
@@ -30,8 +31,12 @@ public class GraphicalActivity extends Activity {
   /** The chart to be drawn. */
   private AbstractChart mChart;
 
+  final boolean D = true;
+  private static final String TAG = "GraphicalActivity";
+
   @Override
   protected void onCreate(Bundle savedInstanceState) {
+    if(D){Log.i(TAG, "onCreate");}
     super.onCreate(savedInstanceState);
     Bundle extras = getIntent().getExtras();
     mChart = (AbstractChart) extras.getSerializable(ChartFactory.CHART);

@@ -37,6 +37,7 @@ import android.graphics.Rect;
 import android.graphics.RectF;
 import android.os.Build;
 import android.os.Handler;
+import android.util.Log;
 import android.view.MotionEvent;
 import android.view.View;
 
@@ -81,6 +82,8 @@ public class GraphicalView extends View {
   /** If the graphical view is drawn. */
   private boolean mDrawn;
 
+  final boolean D = true;
+  private static final String TAG = "GraphicalView";
   /**
    * Creates a new graphical view.
    * 
@@ -88,6 +91,7 @@ public class GraphicalView extends View {
    * @param chart the chart to be drawn
    */
   public GraphicalView(Context context, AbstractChart chart) {
+    if(D){Log.i(TAG, "GraphicalView");}
     super(context);
     mChart = chart;
     mHandler = new Handler();
@@ -134,6 +138,7 @@ public class GraphicalView extends View {
    * @return the series selection
    */
   public SeriesSelection getCurrentSeriesAndPoint() {
+    if(D){Log.i(TAG, "getCurrentSeriesAndPoint");}
     return mChart.getSeriesAndPointForScreenCoordinate(new Point(oldX, oldY));
   }
 
@@ -153,6 +158,7 @@ public class GraphicalView extends View {
    * @return the currently selected real point
    */
   public double[] toRealPoint(int scale) {
+    if(D){Log.i(TAG, "toRealPoint");}
     if (mChart instanceof XYChart) {
       XYChart chart = (XYChart) mChart;
       return chart.toRealPoint(oldX, oldY, scale);
@@ -161,11 +167,13 @@ public class GraphicalView extends View {
   }
 
   public AbstractChart getChart() {
+    if(D){Log.i(TAG, "getChart");}
     return mChart;
   }
 
   @Override
   protected void onDraw(Canvas canvas) {
+    if(D){Log.i(TAG, "onDraw");}
     super.onDraw(canvas);
     canvas.getClipBounds(mRect);
     int top = mRect.top;
@@ -199,6 +207,7 @@ public class GraphicalView extends View {
    * @param rate the zoom rate
    */
   public void setZoomRate(float rate) {
+    if(D){Log.i(TAG, "setZoomRate");}
     if (mZoomIn != null && mZoomOut != null) {
       mZoomIn.setZoomRate(rate);
       mZoomOut.setZoomRate(rate);
@@ -209,6 +218,7 @@ public class GraphicalView extends View {
    * Do a chart zoom in.
    */
   public void zoomIn() {
+    if(D){Log.i(TAG, "zoomIn");}
     if (mZoomIn != null) {
       mZoomIn.apply(Zoom.ZOOM_AXIS_XY);
       repaint();
@@ -219,6 +229,7 @@ public class GraphicalView extends View {
    * Do a chart zoom out.
    */
   public void zoomOut() {
+    if(D){Log.i(TAG, "zoomOut");}
     if (mZoomOut != null) {
       mZoomOut.apply(Zoom.ZOOM_AXIS_XY);
       repaint();
@@ -229,6 +240,7 @@ public class GraphicalView extends View {
    * Do a chart zoom reset / fit zoom.
    */
   public void zoomReset() {
+    if(D){Log.i(TAG, "zoomReset");}
     if (mFitZoom != null) {
       mFitZoom.apply();
       mZoomIn.notifyZoomResetListeners();
@@ -242,6 +254,7 @@ public class GraphicalView extends View {
    * @param listener zoom listener
    */
   public void addZoomListener(ZoomListener listener, boolean onButtons, boolean onPinch) {
+    if(D){Log.i(TAG, "addZoomListener");}
     if (onButtons) {
       if (mZoomIn != null) {
         mZoomIn.addZoomListener(listener);
@@ -259,6 +272,7 @@ public class GraphicalView extends View {
    * @param listener zoom listener
    */
   public synchronized void removeZoomListener(ZoomListener listener) {
+    if(D){Log.i(TAG, "removeZoomListener");}
     if (mZoomIn != null) {
       mZoomIn.removeZoomListener(listener);
       mZoomOut.removeZoomListener(listener);
@@ -272,6 +286,7 @@ public class GraphicalView extends View {
    * @param listener pan listener
    */
   public void addPanListener(PanListener listener) {
+    if(D){Log.i(TAG, "addPanListener");}
     mTouchHandler.addPanListener(listener);
   }
 
@@ -285,11 +300,13 @@ public class GraphicalView extends View {
   }
 
   protected RectF getZoomRectangle() {
+    if(D){Log.i(TAG, "getZoomRectangle");}
     return mZoomR;
   }
 
   @Override
   public boolean onTouchEvent(MotionEvent event) {
+    if(D){Log.i(TAG, "onTouchEvent");}
     if (event.getAction() == MotionEvent.ACTION_DOWN) {
       // save the x and y so they can be used in the click and long press
       // listeners
@@ -308,6 +325,7 @@ public class GraphicalView extends View {
    * Schedule a view content repaint.
    */
   public void repaint() {
+    if(D){Log.i(TAG, "repaint");}
     mHandler.post(new Runnable() {
       public void run() {
         invalidate();
@@ -324,6 +342,7 @@ public class GraphicalView extends View {
    * @param bottom the bottom position of the area to be repainted
    */
   public void repaint(final int left, final int top, final int right, final int bottom) {
+    if(D){Log.i(TAG, "repaint");}
     mHandler.post(new Runnable() {
       public void run() {
         invalidate(left, top, right, bottom);
@@ -337,6 +356,7 @@ public class GraphicalView extends View {
    * @return the bitmap
    */
   public Bitmap toBitmap() {
+    if(D){Log.i(TAG, "toBitmap");}
     setDrawingCacheEnabled(false);
     if (!isDrawingCacheEnabled()) {
       setDrawingCacheEnabled(true);

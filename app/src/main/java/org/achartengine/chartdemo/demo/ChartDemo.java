@@ -44,6 +44,7 @@ import org.achartengine.chartdemo.demo.chart.XYChartBuilder;
 import android.app.ListActivity;
 import android.content.Intent;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.View;
 import android.widget.ListView;
 import android.widget.SimpleAdapter;
@@ -61,9 +62,13 @@ public class ChartDemo extends ListActivity {
 
   private String[] mMenuSummary;
 
+  final boolean D = true;
+  private static final String TAG = "ChartDemo";
+
   /** Called when the activity is first created. */
   @Override
   public void onCreate(Bundle savedInstanceState) {
+    if(D){Log.i(TAG, "onCreate");}
     super.onCreate(savedInstanceState);
     int length = mCharts.length;
     mMenuText = new String[length + 3];
@@ -84,6 +89,7 @@ public class ChartDemo extends ListActivity {
   }
 
   private List<Map<String, String>> getListValues() {
+    if(D){Log.i(TAG, "getListValues");}
     List<Map<String, String>> values = new ArrayList<Map<String, String>>();
     int length = mMenuText.length;
     for (int i = 0; i < length; i++) {
@@ -99,6 +105,7 @@ public class ChartDemo extends ListActivity {
   protected void onListItemClick(ListView l, View v, int position, long id) {
     super.onListItemClick(l, v, position, id);
     Intent intent = null;
+    if(D){Log.i(TAG, "position=="+position);}
     if (position == 0) {
       intent = new Intent(this, XYChartBuilder.class);
     } else if (position == 1) {

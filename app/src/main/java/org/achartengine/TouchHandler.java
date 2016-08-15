@@ -25,6 +25,7 @@ import org.achartengine.tools.Zoom;
 import org.achartengine.tools.ZoomListener;
 
 import android.graphics.RectF;
+import android.util.Log;
 import android.view.MotionEvent;
 
 /**
@@ -50,6 +51,9 @@ public class TouchHandler implements ITouchHandler {
   /** The graphical view. */
   private GraphicalView graphicalView;
 
+  final boolean D = true;
+  private static final String TAG = "TouchHandler";
+
   /**
    * Creates a new graphical view.
    * 
@@ -57,6 +61,8 @@ public class TouchHandler implements ITouchHandler {
    * @param chart the chart to be drawn
    */
   public TouchHandler(GraphicalView view, AbstractChart chart) {
+    if(D){
+      Log.i(TAG, "TouchHandler");}
     graphicalView = view;
     zoomR = graphicalView.getZoomRectangle();
     if (chart instanceof XYChart) {
@@ -78,6 +84,8 @@ public class TouchHandler implements ITouchHandler {
    * @param event the touch event
    */
   public boolean handleTouch(MotionEvent event) {
+    if(D){
+      Log.i(TAG, "handleTouch");}
     int action = event.getAction();
     if (mRenderer != null && action == MotionEvent.ACTION_MOVE) {
       if (oldX >= 0 || oldY >= 0) {
@@ -152,6 +160,8 @@ public class TouchHandler implements ITouchHandler {
   }
 
   private void applyZoom(float zoomRate, int axis) {
+    if(D){
+      Log.i(TAG, "applyZoom");}
     zoomRate = Math.max(zoomRate, 0.9f);
     zoomRate = Math.min(zoomRate, 1.1f);
     if (mPinchZoom != null && zoomRate > 0.9 && zoomRate < 1.1) {
@@ -166,6 +176,8 @@ public class TouchHandler implements ITouchHandler {
    * @param listener zoom listener
    */
   public void addZoomListener(ZoomListener listener) {
+    if(D){
+      Log.i(TAG, "addZoomListener");}
     if (mPinchZoom != null) {
       mPinchZoom.addZoomListener(listener);
     }
@@ -177,6 +189,8 @@ public class TouchHandler implements ITouchHandler {
    * @param listener zoom listener
    */
   public void removeZoomListener(ZoomListener listener) {
+    if(D){
+      Log.i(TAG, "removeZoomListener");}
     if (mPinchZoom != null) {
       mPinchZoom.removeZoomListener(listener);
     }
@@ -188,6 +202,8 @@ public class TouchHandler implements ITouchHandler {
    * @param listener pan listener
    */
   public void addPanListener(PanListener listener) {
+    if(D){
+      Log.i(TAG, "addPanListener");}
     if (mPan != null) {
       mPan.addPanListener(listener);
     }
@@ -199,6 +215,8 @@ public class TouchHandler implements ITouchHandler {
    * @param listener pan listener
    */
   public void removePanListener(PanListener listener) {
+    if(D){
+      Log.i(TAG, "removePanListener");}
     if (mPan != null) {
       mPan.removePanListener(listener);
     }
