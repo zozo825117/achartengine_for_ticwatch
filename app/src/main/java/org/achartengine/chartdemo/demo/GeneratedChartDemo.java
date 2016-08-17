@@ -38,6 +38,7 @@ import android.app.ListActivity;
 import android.content.Intent;
 import android.graphics.Color;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.View;
 import android.widget.ListView;
 import android.widget.SimpleAdapter;
@@ -49,9 +50,14 @@ public class GeneratedChartDemo extends ListActivity {
 
   private String[] mMenuSummary;
 
+  final boolean D = true;
+  private static final String TAG = "GeneratedChartDemo";
+
   /** Called when the activity is first created. */
   @Override
   public void onCreate(Bundle savedInstanceState) {
+    if(D){
+      Log.i(TAG, "onCreate");}
     super.onCreate(savedInstanceState);
     // I know, I know, this should go into strings.xml and accessed using
     // getString(R.string....)
@@ -64,6 +70,8 @@ public class GeneratedChartDemo extends ListActivity {
   }
 
   private List<Map<String, String>> getListValues() {
+    if(D){
+      Log.i(TAG, "getListValues");}
     List<Map<String, String>> values = new ArrayList<Map<String, String>>();
     int length = mMenuText.length;
     for (int i = 0; i < length; i++) {
@@ -76,6 +84,8 @@ public class GeneratedChartDemo extends ListActivity {
   }
 
   private XYMultipleSeriesDataset getDemoDataset() {
+    if(D){
+      Log.i(TAG, "getDemoDataset");}
     XYMultipleSeriesDataset dataset = new XYMultipleSeriesDataset();
     final int nr = 10;
     Random r = new Random();
@@ -90,6 +100,8 @@ public class GeneratedChartDemo extends ListActivity {
   }
 
   private XYMultipleSeriesDataset getDateDemoDataset() {
+    if(D){
+      Log.i(TAG, "getDateDemoDataset");}
     XYMultipleSeriesDataset dataset = new XYMultipleSeriesDataset();
     final int nr = 10;
     long value = new Date().getTime() - 3 * TimeChart.DAY;
@@ -105,6 +117,8 @@ public class GeneratedChartDemo extends ListActivity {
   }
 
   private XYMultipleSeriesDataset getBarDemoDataset() {
+    if(D){
+      Log.i(TAG, "getBarDemoDataset");}
     XYMultipleSeriesDataset dataset = new XYMultipleSeriesDataset();
     final int nr = 10;
     Random r = new Random();
@@ -119,6 +133,8 @@ public class GeneratedChartDemo extends ListActivity {
   }
 
   private XYMultipleSeriesRenderer getDemoRenderer() {
+    if(D){
+      Log.i(TAG, "getDemoRenderer");}
     XYMultipleSeriesRenderer renderer = new XYMultipleSeriesRenderer();
     renderer.setAxisTitleTextSize(16);
     renderer.setChartTitleTextSize(20);
@@ -144,6 +160,8 @@ public class GeneratedChartDemo extends ListActivity {
   }
 
   public XYMultipleSeriesRenderer getBarDemoRenderer() {
+    if(D){
+      Log.i(TAG, "getBarDemoRenderer");}
     XYMultipleSeriesRenderer renderer = new XYMultipleSeriesRenderer();
     renderer.setAxisTitleTextSize(16);
     renderer.setChartTitleTextSize(20);
@@ -160,6 +178,8 @@ public class GeneratedChartDemo extends ListActivity {
   }
 
   private void setChartSettings(XYMultipleSeriesRenderer renderer) {
+    if(D){
+      Log.i(TAG, "setChartSettings");}
     renderer.setChartTitle("Chart demo");
     renderer.setXTitle("x values");
     renderer.setYTitle("y values");
@@ -171,6 +191,8 @@ public class GeneratedChartDemo extends ListActivity {
 
   @Override
   protected void onListItemClick(ListView l, View v, int position, long id) {
+    if(D){
+      Log.i(TAG, "onListItemClick");}
     super.onListItemClick(l, v, position, id);
     switch (position) {
     case 0:
