@@ -106,6 +106,7 @@ public class ChartDemo extends ListActivity {
     super.onListItemClick(l, v, position, id);
     Intent intent = null;
     if(D){Log.i(TAG, "position=="+position);}
+    if(D){Log.i(TAG, "mCharts.length=="+mCharts.length);}
     if (position == 0) {
       intent = new Intent(this, XYChartBuilder.class);
     } else if (position == 1) {
