@@ -87,9 +87,9 @@ public class AverageTemperatureChart extends AbstractDemoChart {
     }
     setChartSettings(renderer, "Average temperature", "Month", "Temperature", 0.5, 12.5, -10, 40,
         Color.LTGRAY, Color.LTGRAY);
-    renderer.setXLabels(12);
-    renderer.setYLabels(10);
-    renderer.setShowGrid(true);
+    //renderer.setXLabels(12);
+    //renderer.setYLabels(10);
+    //renderer.setShowGrid(true);
     renderer.setXLabelsAlign(Align.RIGHT);
     renderer.setYLabelsAlign(Align.RIGHT);
     renderer.setZoomButtonsVisible(true);

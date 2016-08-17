@@ -1,6 +1,6 @@
 -- Merging decision tree log ---
 manifest
-ADDED from C:\Users\zozo\AndroidStudioProjects\achartengine\app\src\main\AndroidManifest.xml:2:1-27:12
+ADDED from C:\Users\zozo\AndroidStudioProjects\achartengine\app\src\main\AndroidManifest.xml:2:1-28:12
 	package
 		ADDED from C:\Users\zozo\AndroidStudioProjects\achartengine\app\src\main\AndroidManifest.xml:3:5-46
 		INJECTED from C:\Users\zozo\AndroidStudioProjects\achartengine\app\src\main\AndroidManifest.xml
@@ -20,7 +20,7 @@ ADDED from C:\Users\zozo\AndroidStudioProjects\achartengine\app\src\main\Android
 	android:installLocation
 		ADDED from C:\Users\zozo\AndroidStudioProjects\achartengine\app\src\main\AndroidManifest.xml:5:33-63
 application
-ADDED from C:\Users\zozo\AndroidStudioProjects\achartengine\app\src\main\AndroidManifest.xml:7:5-23:19
+ADDED from C:\Users\zozo\AndroidStudioProjects\achartengine\app\src\main\AndroidManifest.xml:7:5-24:19
 	android:label
 		ADDED from C:\Users\zozo\AndroidStudioProjects\achartengine\app\src\main\AndroidManifest.xml:9:9-41
 	android:icon
@@ -45,15 +45,19 @@ activity#org.achartengine.chartdemo.demo.chart.XYChartBuilder
 ADDED from C:\Users\zozo\AndroidStudioProjects\achartengine\app\src\main\AndroidManifest.xml:19:9-89
 	android:name
 		ADDED from C:\Users\zozo\AndroidStudioProjects\achartengine\app\src\main\AndroidManifest.xml:19:19-86
+activity#org.achartengine.chartdemo.demo.chart.ZozoXYChartBuilder
+ADDED from C:\Users\zozo\AndroidStudioProjects\achartengine\app\src\main\AndroidManifest.xml:20:9-93
+	android:name
+		ADDED from C:\Users\zozo\AndroidStudioProjects\achartengine\app\src\main\AndroidManifest.xml:20:19-90
 activity#org.achartengine.chartdemo.demo.chart.PieChartBuilder
-ADDED from C:\Users\zozo\AndroidStudioProjects\achartengine\app\src\main\AndroidManifest.xml:20:9-90
+ADDED from C:\Users\zozo\AndroidStudioProjects\achartengine\app\src\main\AndroidManifest.xml:21:9-90
 	android:name
-		ADDED from C:\Users\zozo\AndroidStudioProjects\achartengine\app\src\main\AndroidManifest.xml:20:19-87
+		ADDED from C:\Users\zozo\AndroidStudioProjects\achartengine\app\src\main\AndroidManifest.xml:21:19-87
 activity#org.achartengine.GraphicalActivity
-ADDED from C:\Users\zozo\AndroidStudioProjects\achartengine\app\src\main\AndroidManifest.xml:21:9-71
+ADDED from C:\Users\zozo\AndroidStudioProjects\achartengine\app\src\main\AndroidManifest.xml:22:9-71
 	android:name
-		ADDED from C:\Users\zozo\AndroidStudioProjects\achartengine\app\src\main\AndroidManifest.xml:21:19-68
+		ADDED from C:\Users\zozo\AndroidStudioProjects\achartengine\app\src\main\AndroidManifest.xml:22:19-68
 activity#org.achartengine.chartdemo.demo.GeneratedChartDemo
-ADDED from C:\Users\zozo\AndroidStudioProjects\achartengine\app\src\main\AndroidManifest.xml:22:9-56
+ADDED from C:\Users\zozo\AndroidStudioProjects\achartengine\app\src\main\AndroidManifest.xml:23:9-56
 	android:name
-		ADDED from C:\Users\zozo\AndroidStudioProjects\achartengine\app\src\main\AndroidManifest.xml:22:19-53
+		ADDED from C:\Users\zozo\AndroidStudioProjects\achartengine\app\src\main\AndroidManifest.xml:23:19-53

@@ -40,6 +40,7 @@ import org.achartengine.chartdemo.demo.chart.TemperatureChart;
 import org.achartengine.chartdemo.demo.chart.TrigonometricFunctionsChart;
 import org.achartengine.chartdemo.demo.chart.WeightDialChart;
 import org.achartengine.chartdemo.demo.chart.XYChartBuilder;
+import org.achartengine.chartdemo.demo.chart.ZozoXYChartBuilder;
 
 import android.app.ListActivity;
 import android.content.Intent;
@@ -64,6 +65,7 @@ public class ChartDemo extends ListActivity {
 
   final boolean D = true;
   private static final String TAG = "ChartDemo";
+  int CustomizationChartSizw =3;
 
   /** Called when the activity is first created. */
   @Override
@@ -71,21 +73,29 @@ public class ChartDemo extends ListActivity {
     if(D){Log.i(TAG, "onCreate");}
     super.onCreate(savedInstanceState);
     int length = mCharts.length;
-    mMenuText = new String[length + 3];
-    mMenuSummary = new String[length + 3];
+    mMenuText = new String[length + CustomizationChartSizw + 1];
+    mMenuSummary = new String[length + CustomizationChartSizw + 1];
     mMenuText[0] = "Embedded line chart demo";
     mMenuSummary[0] = "A demo on how to include a clickable line chart into a graphical activity";
     mMenuText[1] = "Embedded pie chart demo";
     mMenuSummary[1] = "A demo on how to include a clickable pie chart into a graphical activity";
-    for (int i = 0; i < length; i++) {
-      mMenuText[i + 2] = mCharts[i].getName();
-      mMenuSummary[i + 2] = mCharts[i].getDesc();
+    if(CustomizationChartSizw == 3)
+    {
+      mMenuText[2] = "zozo line chart demo";
+      mMenuSummary[2] = "A demo is customization by zozo line chart into a graphical activity";
+      if(D){Log.i(TAG, "CustomizationChartSizw == 3");}
+
     }
-    mMenuText[length + 2] = "Random values charts";
-    mMenuSummary[length + 2] = "Chart demos using randomly generated values";
+    for (int i = 0; i < length; i++) {
+      mMenuText[i + CustomizationChartSizw] = mCharts[i].getName();
+      mMenuSummary[i + CustomizationChartSizw] = mCharts[i].getDesc();
+    }
+    mMenuText[length + CustomizationChartSizw] = "Random values charts";
+    mMenuSummary[length + CustomizationChartSizw] = "Chart demos using randomly generated values";
     setListAdapter(new SimpleAdapter(this, getListValues(), android.R.layout.simple_list_item_2,
         new String[] { IDemoChart.NAME, IDemoChart.DESC }, new int[] { android.R.id.text1,
             android.R.id.text2 }));
+    if(D){Log.i(TAG, "setListAdapter ok");}
   }
 
   private List<Map<String, String>> getListValues() {
@@ -111,8 +121,10 @@ public class ChartDemo extends ListActivity {
       intent = new Intent(this, XYChartBuilder.class);
     } else if (position == 1) {
       intent = new Intent(this, PieChartBuilder.class);
-    } else if (position <= mCharts.length + 1) {
-      intent = mCharts[position - 2].execute(this);
+    } else if(position == 2){
+      intent = new Intent(this, ZozoXYChartBuilder.class);
+    }else if (position <= mCharts.length + 1) {
+      intent = mCharts[position - CustomizationChartSizw].execute(this);
     } else {
       intent = new Intent(this, GeneratedChartDemo.class);
     }
