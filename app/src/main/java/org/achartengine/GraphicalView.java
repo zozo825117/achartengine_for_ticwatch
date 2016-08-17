@@ -91,8 +91,8 @@ public class GraphicalView extends View {
    * @param chart the chart to be drawn
    */
   public GraphicalView(Context context, AbstractChart chart) {
-    if(D){Log.i(TAG, "GraphicalView");}
     super(context);
+    if(D){Log.i(TAG, "GraphicalView");}
     mChart = chart;
     mHandler = new Handler();
     if (mChart instanceof XYChart) {

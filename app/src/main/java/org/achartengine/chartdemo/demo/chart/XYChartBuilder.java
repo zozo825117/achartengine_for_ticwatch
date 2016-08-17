@@ -28,6 +28,7 @@ import org.achartengine.renderer.XYSeriesRenderer;
 import android.app.Activity;
 import android.graphics.Color;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.View;
 import android.view.ViewGroup.LayoutParams;
 import android.widget.Button;
@@ -55,8 +56,13 @@ public class XYChartBuilder extends Activity {
   /** The chart view that displays the data. */
   private GraphicalView mChartView;
 
+  final boolean D = true;
+  private static final String TAG = "XYChartBuilder";
+
   @Override
   protected void onSaveInstanceState(Bundle outState) {
+    if(D){
+      Log.i(TAG, "onSaveInstanceState");}
     super.onSaveInstanceState(outState);
     // save the current data, for instance when changing screen orientation
     outState.putSerializable("dataset", mDataset);
@@ -67,6 +73,8 @@ public class XYChartBuilder extends Activity {
 
   @Override
   protected void onRestoreInstanceState(Bundle savedState) {
+    if(D){
+      Log.i(TAG, "onRestoreInstanceState");}
     super.onRestoreInstanceState(savedState);
     // restore the current data, for instance when changing the screen
     // orientation
@@ -78,6 +86,8 @@ public class XYChartBuilder extends Activity {
 
   @Override
   protected void onCreate(Bundle savedInstanceState) {
+    if(D){
+      Log.i(TAG, "onCreate");}
     super.onCreate(savedInstanceState);
     setContentView(R.layout.xy_chart);
 
@@ -101,6 +111,8 @@ public class XYChartBuilder extends Activity {
     mNewSeries = (Button) findViewById(R.id.new_series);
     mNewSeries.setOnClickListener(new View.OnClickListener() {
       public void onClick(View v) {
+        if(D){
+          Log.i(TAG, "mNewSeries onClick");}
         String seriesTitle = "Series " + (mDataset.getSeriesCount() + 1);
         // create a new series of data
         XYSeries series = new XYSeries(seriesTitle);
@@ -122,6 +134,8 @@ public class XYChartBuilder extends Activity {
 
     mAdd.setOnClickListener(new View.OnClickListener() {
       public void onClick(View v) {
+        if(D){
+          Log.i(TAG, "mAdd onClick");}
         double x = 0;
         double y = 0;
         try {
@@ -149,6 +163,8 @@ public class XYChartBuilder extends Activity {
 
   @Override
   protected void onResume() {
+    if(D){
+      Log.i(TAG, "onResume");}
     super.onResume();
     if (mChartView == null) {
       LinearLayout layout = (LinearLayout) findViewById(R.id.chart);
@@ -188,6 +204,8 @@ public class XYChartBuilder extends Activity {
    * @param enabled the enabled state
    */
   private void setSeriesWidgetsEnabled(boolean enabled) {
+    if(D){
+      Log.i(TAG, "setSeriesWidgetsEnabled");}
     mX.setEnabled(enabled);
     mY.setEnabled(enabled);
     mAdd.setEnabled(enabled);

@@ -29,17 +29,22 @@ import android.content.Context;
 import android.content.Intent;
 import android.graphics.Color;
 import android.graphics.Paint.Align;
+import android.util.Log;
 
 /**
  * Average temperature demo chart.
  */
 public class AverageTemperatureChart extends AbstractDemoChart {
+  final boolean D = true;
+  private static final String TAG = "AverageTemperatureChart";
+
   /**
    * Returns the chart name.
    * 
    * @return the chart name
    */
   public String getName() {
+    if(D){Log.i(TAG, "getName");}
     return "Average temperature";
   }
 
@@ -49,6 +54,7 @@ public class AverageTemperatureChart extends AbstractDemoChart {
    * @return the chart description
    */
   public String getDesc() {
+    if(D){Log.i(TAG, "getDesc");}
     return "The average temperature in 4 Greek islands (line chart)";
   }
 
@@ -59,6 +65,7 @@ public class AverageTemperatureChart extends AbstractDemoChart {
    * @return the built intent
    */
   public Intent execute(Context context) {
+    if(D){Log.i(TAG, "execute");}
     String[] titles = new String[] { "Crete", "Corfu", "Thassos", "Skiathos" };
     List<double[]> x = new ArrayList<double[]>();
     for (int i = 0; i < titles.length; i++) {

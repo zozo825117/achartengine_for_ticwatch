@@ -385,6 +385,7 @@ public class ChartFactory {
    */
   public static final Intent getLineChartIntent(Context context, XYMultipleSeriesDataset dataset,
       XYMultipleSeriesRenderer renderer, String activityTitle) {
+
     checkParameters(dataset, renderer);
     Intent intent = new Intent(context, GraphicalActivity.class);
     XYChart chart = new LineChart(dataset, renderer);
