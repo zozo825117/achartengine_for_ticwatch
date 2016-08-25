@@ -50,14 +50,19 @@ public class ZozoXYChartBuilder extends Activity {
   private XYSeries mCurrentSeries;
   /** The most recently created renderer, customizing the current series. */
   private XYSeriesRenderer mCurrentRenderer;
-  /** Button for creating a new series of data. */
-  private Button mNewSeries;
+/*  *//** Button for creating a new series of data. *//*
+  private Button mNewSeries;*/
   /** Button for adding entered data to the current series. */
-  private Button mAdd;
-  /** Edit text field for entering the X value of the data to be added. */
-  private EditText mX;
-  /** Edit text field for entering the Y value of the data to be added. */
-  private EditText mY;
+  private Button mEnableButton;
+    /** Button for adding entered data to the current series. */
+    private Button mDisableButton;
+    /** Button for adding entered data to the current series. */
+    private Button mStopButton;
+    /** Button for adding entered data to the current series. */
+    private Button mClearButton;
+    /* Edit text field for entering the Y value of the data to be added. */
+    private EditText mSeries;
+
   /** The chart view that displays the data. */
   private GraphicalView mChartView;
 
@@ -92,8 +97,14 @@ public class ZozoXYChartBuilder extends Activity {
           0xce,0xd8,0x9a,0xb7,0x63,0xa1,0x9b,0x99,0x64,0xa1,0x98,0xb7,0xd1,0xd8,0xff,0xff
   };
 
-  int ptr = 0,x_index = 0;
-    int X_MAX;
+    int ptr = 0;
+    double x_index = 0;
+    double X_MAX = 100;
+    boolean EnableSerise1 = false,EnableSerise2 = false,EnableSerise3 = false;
+    private XYSeries xyseries1,xyseries2,xyseries3;//数据
+    private XYSeriesRenderer datarenderer1,datarenderer2,datarenderer3;
+    private Timer mTimer;
+    private TimerTask mTask;
 
   @Override
   protected void onSaveInstanceState(Bundle outState) {
@@ -125,12 +136,18 @@ public class ZozoXYChartBuilder extends Activity {
     if(D){
       Log.i(TAG, "onCreate");}
     super.onCreate(savedInstanceState);
-    setContentView(R.layout.xy_chart);
+    setContentView(R.layout.xy_zozo_chart);
 
     // the top part of the UI components for adding new data points
-    mX = (EditText) findViewById(R.id.xValue);
-    mY = (EditText) findViewById(R.id.yValue);
-    mAdd = (Button) findViewById(R.id.add);
+    // mX = (EditText) findViewById(R.id.xValue);
+    // mY = (EditText) findViewById(R.id.yValue);
+    // mAdd = (Button) findViewById(R.id.add);
+
+    mSeries = (EditText) findViewById(R.id.SeriesValue);
+    mEnableButton = (Button) findViewById(R.id.enable_button);
+    mDisableButton = (Button) findViewById(R.id.disable_button);
+    mStopButton = (Button) findViewById(R.id.stop_button);
+    mClearButton = (Button) findViewById(R.id.clear_button);
 
     // set some properties on the main renderer
     mRenderer.setApplyBackgroundColor(true);
@@ -144,128 +161,214 @@ public class ZozoXYChartBuilder extends Activity {
 
     mRenderer.setPointSize(5);
 
-      mRenderer.setChartTitle("zozo motion test");
-      mRenderer.setXTitle("time");
-      mRenderer.setYTitle("raw data");
+    mRenderer.setChartTitle("zozo motion test");
+    mRenderer.setXTitle("time");
+    mRenderer.setYTitle("acc data");
 
-      mRenderer.setXLabelsAlign(Paint.Align.RIGHT);
-      mRenderer.setYLabelsAlign(Paint.Align.RIGHT);
-      mRenderer.setAxisTitleTextSize(16);
-      mRenderer.setChartTitleTextSize(20);
-      mRenderer.setLabelsTextSize(10);
-      mRenderer.setLegendTextSize(15);
+    mRenderer.setXLabelsAlign(Paint.Align.RIGHT);
+    mRenderer.setYLabelsAlign(Paint.Align.RIGHT);
+    mRenderer.setAxisTitleTextSize(16);
+    mRenderer.setChartTitleTextSize(20);
+    mRenderer.setLabelsTextSize(10);
+    mRenderer.setLegendTextSize(15);
 
-      mRenderer.setXAxisMin(0.5);
-      mRenderer.setXAxisMax(100);
-      mRenderer.setYAxisMin(-40000);
-      mRenderer.setYAxisMax(40000);
-      mRenderer.setAxesColor(Color.LTGRAY);
-      mRenderer.setLabelsColor(Color.LTGRAY);
+    mRenderer.setXAxisMin(0.5);
+    mRenderer.setXAxisMax(100);
+    mRenderer.setYAxisMin(-40000);
+    mRenderer.setYAxisMax(40000);
+    mRenderer.setAxesColor(Color.LTGRAY);
+    mRenderer.setLabelsColor(Color.LTGRAY);
 
-    // the button that handles the new series of data creation
-    mNewSeries = (Button) findViewById(R.id.new_series);
-    mNewSeries.setOnClickListener(new View.OnClickListener() {
-      public void onClick(View v) {
-        if(D){
-          Log.i(TAG, "mNewSeries onClick");}
-        String seriesTitle = "Series " + (mDataset.getSeriesCount() + 1);
-        // create a new series of data
-        XYSeries series = new XYSeries(seriesTitle);
-        mDataset.addSeries(series);
-        mCurrentSeries = series;
+/*    LinearLayout layout = (LinearLayout) findViewById(R.id.chart);
+    mChartView = ChartFactory.getLineChartView(this, mDataset, mRenderer);
+    // enable the chart click events
+    mRenderer.setClickEnabled(true);
+    mRenderer.setSelectableBuffer(10);
+    layout.addView(mChartView, new LayoutParams(LayoutParams.FILL_PARENT,
+            LayoutParams.FILL_PARENT));*/
 
 
-          X_MAX = 100;
+    mEnableButton.setOnClickListener(new View.OnClickListener() {
+        public void onClick(View v) {
+            if (D) {
+                Log.i(TAG, "mEnableButton onClick");
+            }
+            int x = 0;
 
-/*        int length = X_Buf.length;
-        for (int i = 0; i < length; i++)
-        {
-          mCurrentSeries.add(X_Buf[i], Y_Buf[i]);
-        }*/
-        //
-        final int length = SineWaveSim.length;
+            try {
+                x = Integer.parseInt(mSeries.getText().toString());
+            } catch (NumberFormatException e) {
+                mSeries.requestFocus();
+                return;
+            }
+
+            // add a new data point to the current series
+
+            switch (x) {
+                case 1:
+                    Log.i(TAG, "getSeries" + mDataset.getSeries());
+                    if (!EnableSerise1) {
+                        EnableSerise1 = true;
+                        datarenderer1 = new XYSeriesRenderer();
+                        datarenderer1.setDisplayChartValues(true);
+                        datarenderer1.setColor(Color.GREEN);
+                        datarenderer1.setPointStyle(PointStyle.POINT);
+                        mRenderer.addSeriesRenderer(datarenderer1);
+
+                        xyseries1 = new XYSeries("l_acc_x");
+                        //xyseries1.add(0, 0);//先输入一个数据让它绘出renderer
+                        mDataset.addSeries(0, xyseries1);
+
+                    } else {
+                        //if(mDataset.getSeriesAt(0) == null)
+                        {
+                            mDataset.addSeries(0, xyseries1);
+                        }
+                        datarenderer1.setColor(Color.GREEN);
+                    }
+                    break;
+                case 2:
+                    Log.i(TAG, "getSeries" + mDataset.getSeries());
+                    if (!EnableSerise2) {
+                        EnableSerise2 = true;
+                        datarenderer2 = new XYSeriesRenderer();
+                        datarenderer2.setDisplayChartValues(true);
+                        datarenderer2.setColor(Color.YELLOW);
+                        datarenderer2.setPointStyle(PointStyle.POINT);
+                        mRenderer.addSeriesRenderer(datarenderer2);
+
+                        xyseries2 = new XYSeries("l_acc_y");
+                        //xyseries2.add(0, 0);//先输入一个数据让它绘出renderer
+                        mDataset.addSeries(1, xyseries2);
+
+                    } else {
+                        //if(mDataset.getSeriesAt(1) == null)
+                            {
+                                mDataset.addSeries(1, xyseries2);
+                            }
 
 
-        // time
-        final Timer timer = new Timer();
-        TimerTask task;
+                        datarenderer2.setColor(Color.YELLOW);
+                    }
+                    break;
+                case 3:
+                    Log.i(TAG, "getSeries" + mDataset.getSeries());
+                    if (!EnableSerise3) {
+                        EnableSerise3 = true;
+                        datarenderer3 = new XYSeriesRenderer();
+                        datarenderer3.setDisplayChartValues(true);
+                        datarenderer3.setColor(Color.BLUE);
+                        datarenderer3.setPointStyle(PointStyle.POINT);
+                        mRenderer.addSeriesRenderer(datarenderer3);
 
-        //2.初始化计时器任务。
-        task = new TimerTask() {
-          @Override
-          public void run() {
-            // TODO Auto-generated method stub
-            int y = 0;
-              y = (int)((int)SineWaveSim[ptr] | ((int)SineWaveSim[ptr+1]<<8));
-              if(y > 0x8000)y-=0x10000;
+                        xyseries3 = new XYSeries("l_acc_y");
+                        //xyseries3.add(0, 0);//先输入一个数据让它绘出renderer
+                        mDataset.addSeries(2, xyseries3);
 
+                    } else {
+                        //if(mDataset.getSeriesAt(2) == null)
+                        {
+                            mDataset.addSeries(2, xyseries3);
+                        }
 
-              mDataset.removeSeries(mCurrentSeries);
-              mCurrentSeries.add(ptr, y);
-              mDataset.addSeries(mCurrentSeries);
+                        datarenderer3.setColor(Color.BLUE);
+                    }
+                    break;
+                default:
+                    break;
+            }
 
-              ptr+=2;
-              x_index+=2;
-              if(ptr >= length)ptr=0;
+            mStopButton.setText("STOP");
 
-              //更新UI
-              //mChartView.repaint();
-              mChartView.postInvalidate();
+            // time
+            startTimer();
 
-              //延长X_MAX造成右移效果
-              if(x_index * 2 > X_MAX)
-              {
-                  X_MAX*=2;//按2倍速度延长 可以设置成speed
-                  mRenderer.setXAxisMax(X_MAX);// 设置X最大值
+            //
+            mSeries.setText("");
+            mSeries.requestFocus();
+            // repaint the chart such as the newly added point to be visible
+            mChartView.repaint();
+        }
+    });
+
+      mDisableButton.setOnClickListener(new View.OnClickListener() {
+          public void onClick(View v) {
+              if (D) {
+                  Log.i(TAG, "mEnableButton onClick");
+              }
+              int x = 0;
+
+              try {
+                  x = Integer.parseInt(mSeries.getText().toString());
+              } catch (NumberFormatException e) {
+                  mSeries.requestFocus();
+                  return;
               }
 
-            Log.i(TAG,"ptr="+""+ ptr +","+"y="+""+ y);
+              // add a new data point to the current series
+
+              switch (x) {
+                  case 1:
+                      if (EnableSerise1) {
+                          if(mDataset.getSeriesAt(0) != null)
+                            mDataset.removeSeries(xyseries1);
+                          //datarenderer1.setColor(Color.BLACK);
+                      }
+                      break;
+                  case 2:
+                      if (EnableSerise2) {
+                          if(mDataset.getSeriesAt(1) != null)
+                              mDataset.removeSeries(xyseries2);
+                          //datarenderer2.setColor(Color.BLACK);
+                      }
+                      break;
+                  case 3:
+                      if (EnableSerise3) {
+                          if(mDataset.getSeriesAt(2) != null)
+                              mDataset.removeSeries(xyseries3);
+                          //datarenderer3.setColor(Color.BLACK);
+                      }
+                      break;
+                  default:
+                      break;
+              }
+              mSeries.setText("");
+              mSeries.requestFocus();
+              // repaint the chart such as the newly added point to be visible
+              mChartView.repaint();
           }
-        };
-        //3.启动定时器
-        timer.schedule(task, 2000, 200);
+      });
 
-        // create a new renderer for the new series
-        XYSeriesRenderer renderer = new XYSeriesRenderer();
-        mRenderer.addSeriesRenderer(renderer);
-        // set some renderer properties
-        renderer.setPointStyle(PointStyle.CIRCLE);
-        renderer.setFillPoints(true);
-        renderer.setDisplayChartValues(true);
-        renderer.setDisplayChartValuesDistance(10);
-        mCurrentRenderer = renderer;
-        setSeriesWidgetsEnabled(true);
-        mChartView.repaint();
-      }
-    });
+      mStopButton.setOnClickListener(new View.OnClickListener() {
+          public void onClick(View v) {
+              Log.i(TAG, mStopButton.getText().toString());
+              if(mStopButton.getText().toString().equals("STOP"))
+              {
+                  stopTimer();
+                  mStopButton.setText("START");
+              }
+              else if(mStopButton.getText().toString().equals("START"))
+              {
+                  startTimer();
+                  mStopButton.setText("STOP");
+              }
+          }
+      });
 
-    mAdd.setOnClickListener(new View.OnClickListener() {
-      public void onClick(View v) {
-        if(D){
-          Log.i(TAG, "mAdd onClick");}
-        double x = 0;
-        double y = 0;
-        try {
-          x = Double.parseDouble(mX.getText().toString());
-        } catch (NumberFormatException e) {
-          mX.requestFocus();
-          return;
-        }
-        try {
-          y = Double.parseDouble(mY.getText().toString());
-        } catch (NumberFormatException e) {
-          mY.requestFocus();
-          return;
-        }
-        // add a new data point to the current series
-        mCurrentSeries.add(x, y);
-        mX.setText("");
-        mY.setText("");
-        mX.requestFocus();
-        // repaint the chart such as the newly added point to be visible
-        mChartView.repaint();
-      }
-    });
+      mClearButton.setOnClickListener(new View.OnClickListener() {
+          public void onClick(View v) {
+              //if(mStopButton.getText().toString().equals("STOP"))
+              {
+                  stopTimer();
+                  mStopButton.setText("START");
+              }
+              if(mDataset != null)
+              {
+                  mDataset.clear();
+                  mChartView.repaint();
+              }
+          }
+      });
   }
 
   @Override
@@ -313,8 +416,86 @@ public class ZozoXYChartBuilder extends Activity {
   private void setSeriesWidgetsEnabled(boolean enabled) {
     if(D){
       Log.i(TAG, "setSeriesWidgetsEnabled");}
-    mX.setEnabled(enabled);
-    mY.setEnabled(enabled);
-    mAdd.setEnabled(enabled);
+
   }
+
+    private void waveUpdataRoutine()
+    {
+        int y = 0;
+        final int length = SineWaveSim.length;
+        Log.i(TAG, "length=" + "" + length);        //mDataset.removeSeries(mCurrentSeries);
+
+        if (EnableSerise1) {
+            y = (int) ((int) SineWaveSim[ptr] | ((int) SineWaveSim[ptr + 1] << 8));
+            if (y > 0x8000) y -= 0x10000;
+            xyseries1.add(x_index, y);
+        }
+        if (EnableSerise2) {
+            int ptr_buf = ptr + 40;
+            if (ptr_buf >= length) ptr_buf -= length;
+            y = (int) ((int) SineWaveSim[ptr_buf] | ((int) SineWaveSim[ptr_buf + 1] << 8));
+            if (y > 0x8000) y -= 0x10000;
+            xyseries2.add(x_index, y);
+        }
+        if (EnableSerise3) {
+            int ptr_buf = ptr + 80;
+            if (ptr_buf >= length) ptr_buf -= length;
+            y = (int) ((int) SineWaveSim[ptr_buf] | ((int) SineWaveSim[ptr_buf + 1] << 8));
+            if (y > 0x8000) y -= 0x10000;
+            xyseries3.add(x_index, y);
+        }
+        ptr += 2;
+        x_index += 2;
+        if (ptr >= length) ptr = 0;
+
+        //更新UI
+        //mChartView.repaint();
+        mChartView.postInvalidate();
+
+        //延长X_MAX造成右移效果
+        if (x_index * 1.2 > X_MAX) {
+            X_MAX *= 1.2;//按2倍速度延长 可以设置成speed
+            mRenderer.setXAxisMax(X_MAX);// 设置X最大值
+        }
+
+        Log.i(TAG, "ptr=" + "" + ptr + "," + "y=" + "" + y);
+    }
+    private void startTimer()
+    {
+        if(mTimer == null)
+        {
+            mTimer = new Timer();
+
+            //2.初始化计时器任务。
+            if(mTask == null)
+            {
+                mTask = new TimerTask() {
+                    @Override
+                    public void run() {
+                        // TODO Auto-generated method stub
+                        waveUpdataRoutine();
+                    }
+                };
+            }
+            //3.启动定时器
+                mTimer.schedule(mTask, 2000, 500);
+        }
+
+    }
+
+
+    private void stopTimer()
+    {
+        if(mTimer != null)
+        {
+            mTimer.cancel();
+            mTimer = null;
+        }
+        if(mTask != null)
+        {
+            mTask.cancel();
+            mTask = null;
+        }
+    }
+
 }
