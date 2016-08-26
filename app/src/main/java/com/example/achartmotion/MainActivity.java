@@ -13,13 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.achartengine.chartdemo.demo.chart;
+package com.example.achartmotion;
 
 import org.achartengine.ChartFactory;
 import org.achartengine.GraphicalView;
 import org.achartengine.chart.PointStyle;
-//import org.achartengine.chartdemo.demo.R;
-import com.example.achartmotion.R;
 import org.achartengine.model.SeriesSelection;
 import org.achartengine.model.XYMultipleSeriesDataset;
 import org.achartengine.model.XYSeries;
@@ -27,8 +25,13 @@ import org.achartengine.renderer.XYMultipleSeriesRenderer;
 import org.achartengine.renderer.XYSeriesRenderer;
 
 import android.app.Activity;
+import android.content.Context;
 import android.graphics.Color;
 import android.graphics.Paint;
+import android.hardware.Sensor;
+import android.hardware.SensorEvent;
+import android.hardware.SensorEventListener;
+import android.hardware.SensorManager;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
@@ -41,8 +44,9 @@ import android.widget.Toast;
 import java.util.Timer;
 import java.util.TimerTask;
 
-public class ZozoXYChartBuilder extends Activity {
-  /** The main dataset that includes all the series that go into a chart. */
+public class MainActivity extends Activity {
+
+ /** The main dataset that includes all the series that go into a chart. */
   private XYMultipleSeriesDataset mDataset = new XYMultipleSeriesDataset();
   /** The main renderer that includes all the renderers customizing a chart. */
   private XYMultipleSeriesRenderer mRenderer = new XYMultipleSeriesRenderer();
@@ -67,10 +71,7 @@ public class ZozoXYChartBuilder extends Activity {
   private GraphicalView mChartView;
 
   final boolean D = true;
-  private static final String TAG = "XYChartBuilder";
-
-  double Y_Buf[] = { 12.3, 12.5, 13.8, 16.8, 20.4, 24.4, 26.4, 26.1, 23.6, 20.3, 17.2,13.9 };
-  double X_Buf[] = { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12 };
+  private static final String TAG = "MainActivity";
 
   int SineWaveSim[] = {
           0x31,0x27,0x67,0x48,0x9c,0x5e,0x66,0x66,0x9b,0x5e,0x69,0x48,0x2f,0x27,0x01,0x00,
@@ -99,40 +100,34 @@ public class ZozoXYChartBuilder extends Activity {
 
     int ptr = 0;
     double x_index = 0;
+    double X_MIN = 0;
     double X_MAX = 100;
-    boolean EnableSerise1 = false,EnableSerise2 = false,EnableSerise3 = false;
-    private XYSeries xyseries1,xyseries2,xyseries3;//数据
+    double Y_MIN = -10;
+    double Y_MAX = 10;
+    boolean EnableSerise1 = false,EnableSerise2 = false,EnableSerise3 = false,InitSerise1 = false,InitSerise2 = false,InitSerise3 = false;;
+    private XYSeries xyseries1,xyseries2,xyseries3;//????
     private XYSeriesRenderer datarenderer1,datarenderer2,datarenderer3;
     private Timer mTimer;
     private TimerTask mTask;
 
-  @Override
-  protected void onSaveInstanceState(Bundle outState) {
-    if(D){
-      Log.i(TAG, "onSaveInstanceState");}
-    super.onSaveInstanceState(outState);
-    // save the current data, for instance when changing screen orientation
-    outState.putSerializable("dataset", mDataset);
-    outState.putSerializable("renderer", mRenderer);
-    outState.putSerializable("current_series", mCurrentSeries);
-    outState.putSerializable("current_renderer", mCurrentRenderer);
-  }
+    //motion
+    private SensorManager sm;
+    int AsensorType;
+    int MsensorType;
+    int GsensorType;
+    int LsensorType;
+    /**
+     * Enable or disable the add data to series widgets
+     *
+     * @param enabled the enabled state
+     */
+    private void setSeriesWidgetsEnabled(boolean enabled) {
+        if(D){
+            Log.i(TAG, "setSeriesWidgetsEnabled");}
 
-  @Override
-  protected void onRestoreInstanceState(Bundle savedState) {
-    if(D){
-      Log.i(TAG, "onRestoreInstanceState");}
-    super.onRestoreInstanceState(savedState);
-    // restore the current data, for instance when changing the screen
-    // orientation
-    mDataset = (XYMultipleSeriesDataset) savedState.getSerializable("dataset");
-    mRenderer = (XYMultipleSeriesRenderer) savedState.getSerializable("renderer");
-    mCurrentSeries = (XYSeries) savedState.getSerializable("current_series");
-    mCurrentRenderer = (XYSeriesRenderer) savedState.getSerializable("current_renderer");
-  }
+    }
 
-  @Override
-  protected void onCreate(Bundle savedInstanceState) {
+	protected void onCreate(Bundle savedInstanceState) {
     if(D){
       Log.i(TAG, "onCreate");}
     super.onCreate(savedInstanceState);
@@ -172,20 +167,31 @@ public class ZozoXYChartBuilder extends Activity {
     mRenderer.setLabelsTextSize(10);
     mRenderer.setLegendTextSize(15);
 
-    mRenderer.setXAxisMin(0.5);
-    mRenderer.setXAxisMax(100);
-    mRenderer.setYAxisMin(-40000);
-    mRenderer.setYAxisMax(40000);
+    mRenderer.setXAxisMin(X_MIN);
+    mRenderer.setXAxisMax(X_MAX);
+    mRenderer.setYAxisMin(Y_MIN);
+    mRenderer.setYAxisMax(Y_MAX);
     mRenderer.setAxesColor(Color.LTGRAY);
     mRenderer.setLabelsColor(Color.LTGRAY);
 
-/*    LinearLayout layout = (LinearLayout) findViewById(R.id.chart);
-    mChartView = ChartFactory.getLineChartView(this, mDataset, mRenderer);
-    // enable the chart click events
-    mRenderer.setClickEnabled(true);
-    mRenderer.setSelectableBuffer(10);
-    layout.addView(mChartView, new LayoutParams(LayoutParams.FILL_PARENT,
-            LayoutParams.FILL_PARENT));*/
+        //创建一个SensorManager来获取系统的传感器服务
+        sm = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
+        //选取加速度感应器
+        //AsensorType = Sensor.TYPE_ACCELEROMETER;
+        //MsensorType = Sensor.TYPE_ORIENTATION;
+        //GsensorType = Sensor.TYPE_GRAVITY;
+        LsensorType = Sensor.TYPE_LINEAR_ACCELERATION;
+
+                /*
+                 * 最常用的一个方法 注册事件
+                 * 参数1 ：SensorEventListener监听器
+                 * 参数2 ：Sensor 一个服务可能有多个Sensor实现，此处调用getDefaultSensor获取默认的Sensor
+                 * 参数3 ：模式 可选数据变化的刷新频率
+                 * */
+//        sm.registerListener(myAccelerometerListener, sm.getDefaultSensor(AsensorType), SensorManager.SENSOR_DELAY_NORMAL);
+//        sm.registerListener(myAccelerometerListener, sm.getDefaultSensor(MsensorType), SensorManager.SENSOR_DELAY_NORMAL);
+//        sm.registerListener(myAccelerometerListener, sm.getDefaultSensor(GsensorType), SensorManager.SENSOR_DELAY_NORMAL);
+//        sm.registerListener(myAccelerometerListener, sm.getDefaultSensor(LsensorType), SensorManager.SENSOR_DELAY_NORMAL);
 
 
     mEnableButton.setOnClickListener(new View.OnClickListener() {
@@ -203,11 +209,11 @@ public class ZozoXYChartBuilder extends Activity {
             }
 
             // add a new data point to the current series
-
             switch (x) {
                 case 1:
-                    Log.i(TAG, "getSeries" + mDataset.getSeries());
-                    if (!EnableSerise1) {
+                    //Log.i(TAG, "getSeries" + mDataset.getSeries());
+                    if (!InitSerise1) {
+                        InitSerise1 = true;
                         EnableSerise1 = true;
                         datarenderer1 = new XYSeriesRenderer();
                         datarenderer1.setDisplayChartValues(true);
@@ -215,21 +221,20 @@ public class ZozoXYChartBuilder extends Activity {
                         datarenderer1.setPointStyle(PointStyle.POINT);
                         mRenderer.addSeriesRenderer(datarenderer1);
 
-                        xyseries1 = new XYSeries("l_acc_x");
-                        //xyseries1.add(0, 0);//先输入一个数据让它绘出renderer
+                        xyseries1 = new XYSeries("lacc_x");
                         mDataset.addSeries(0, xyseries1);
-
                     } else {
-                        //if(mDataset.getSeriesAt(0) == null)
+                        if(!EnableSerise1)
                         {
                             mDataset.addSeries(0, xyseries1);
+                            EnableSerise1 = true;
                         }
-                        datarenderer1.setColor(Color.GREEN);
                     }
                     break;
                 case 2:
-                    Log.i(TAG, "getSeries" + mDataset.getSeries());
-                    if (!EnableSerise2) {
+                    //Log.i(TAG, "getSeries" + mDataset.getSeries().toString());
+                    if (!InitSerise2) {
+                        InitSerise2 = true;
                         EnableSerise2 = true;
                         datarenderer2 = new XYSeriesRenderer();
                         datarenderer2.setDisplayChartValues(true);
@@ -237,23 +242,21 @@ public class ZozoXYChartBuilder extends Activity {
                         datarenderer2.setPointStyle(PointStyle.POINT);
                         mRenderer.addSeriesRenderer(datarenderer2);
 
-                        xyseries2 = new XYSeries("l_acc_y");
-                        //xyseries2.add(0, 0);//先输入一个数据让它绘出renderer
+                        xyseries2 = new XYSeries("lacc_y");
                         mDataset.addSeries(1, xyseries2);
 
                     } else {
-                        //if(mDataset.getSeriesAt(1) == null)
+                        if(!EnableSerise2)
                             {
                                 mDataset.addSeries(1, xyseries2);
+                                EnableSerise2 = true;
                             }
-
-
-                        datarenderer2.setColor(Color.YELLOW);
                     }
                     break;
                 case 3:
-                    Log.i(TAG, "getSeries" + mDataset.getSeries());
-                    if (!EnableSerise3) {
+                    //Log.i(TAG, "getSeries" + mDataset.getSeries());
+                    if (!InitSerise3) {
+                        InitSerise3 = true;
                         EnableSerise3 = true;
                         datarenderer3 = new XYSeriesRenderer();
                         datarenderer3.setDisplayChartValues(true);
@@ -261,17 +264,15 @@ public class ZozoXYChartBuilder extends Activity {
                         datarenderer3.setPointStyle(PointStyle.POINT);
                         mRenderer.addSeriesRenderer(datarenderer3);
 
-                        xyseries3 = new XYSeries("l_acc_y");
-                        //xyseries3.add(0, 0);//先输入一个数据让它绘出renderer
+                        xyseries3 = new XYSeries("lacc_z");
                         mDataset.addSeries(2, xyseries3);
 
                     } else {
-                        //if(mDataset.getSeriesAt(2) == null)
+                        if(!EnableSerise3)
                         {
                             mDataset.addSeries(2, xyseries3);
+                            EnableSerise3 = true;
                         }
-
-                        datarenderer3.setColor(Color.BLUE);
                     }
                     break;
                 default:
@@ -280,14 +281,22 @@ public class ZozoXYChartBuilder extends Activity {
 
             mStopButton.setText("STOP");
 
-            // time
-            startTimer();
+/*            // time
+            startTimer();*/
 
             //
             mSeries.setText("");
             mSeries.requestFocus();
             // repaint the chart such as the newly added point to be visible
             mChartView.repaint();
+
+            /*
+             * 最常用的一个方法 注册事件
+             * 参数1 ：SensorEventListener监听器
+             * 参数2 ：Sensor 一个服务可能有多个Sensor实现，此处调用getDefaultSensor获取默认的Sensor
+             * 参数3 ：模式 可选数据变化的刷新频率
+             * */
+            sm.registerListener(myAccelerometerListener, sm.getDefaultSensor(Sensor.TYPE_LINEAR_ACCELERATION), SensorManager.SENSOR_DELAY_NORMAL);
         }
     });
 
@@ -310,23 +319,20 @@ public class ZozoXYChartBuilder extends Activity {
               switch (x) {
                   case 1:
                       if (EnableSerise1) {
-                          if(mDataset.getSeriesAt(0) != null)
-                            mDataset.removeSeries(xyseries1);
-                          //datarenderer1.setColor(Color.BLACK);
+                          EnableSerise1 = false;
+                          mDataset.removeSeries(xyseries1);
                       }
                       break;
                   case 2:
                       if (EnableSerise2) {
-                          if(mDataset.getSeriesAt(1) != null)
-                              mDataset.removeSeries(xyseries2);
-                          //datarenderer2.setColor(Color.BLACK);
+                          EnableSerise2 = false;
+                          mDataset.removeSeries(xyseries2);
                       }
                       break;
                   case 3:
                       if (EnableSerise3) {
-                          if(mDataset.getSeriesAt(2) != null)
-                              mDataset.removeSeries(xyseries3);
-                          //datarenderer3.setColor(Color.BLACK);
+                          EnableSerise3 = false;
+                          mDataset.removeSeries(xyseries3);
                       }
                       break;
                   default:
@@ -344,12 +350,16 @@ public class ZozoXYChartBuilder extends Activity {
               Log.i(TAG, mStopButton.getText().toString());
               if(mStopButton.getText().toString().equals("STOP"))
               {
-                  stopTimer();
+                  //stopTimer();
+                  sm.unregisterListener(myAccelerometerListener);
                   mStopButton.setText("START");
               }
               else if(mStopButton.getText().toString().equals("START"))
               {
-                  startTimer();
+                  if(EnableSerise1 | EnableSerise2 | EnableSerise3)
+                  {
+                      sm.registerListener(myAccelerometerListener, sm.getDefaultSensor(Sensor.TYPE_LINEAR_ACCELERATION), SensorManager.SENSOR_DELAY_NORMAL);
+                  }
                   mStopButton.setText("STOP");
               }
           }
@@ -359,7 +369,7 @@ public class ZozoXYChartBuilder extends Activity {
           public void onClick(View v) {
               //if(mStopButton.getText().toString().equals("STOP"))
               {
-                  stopTimer();
+                  sm.unregisterListener(myAccelerometerListener);
                   mStopButton.setText("START");
               }
               if(mDataset != null)
@@ -369,7 +379,8 @@ public class ZozoXYChartBuilder extends Activity {
               }
           }
       });
-  }
+
+	}//oncreate end
 
   @Override
   protected void onResume() {
@@ -387,11 +398,11 @@ public class ZozoXYChartBuilder extends Activity {
           // handle the click event on the chart
           SeriesSelection seriesSelection = mChartView.getCurrentSeriesAndPoint();
           if (seriesSelection == null) {
-            Toast.makeText(ZozoXYChartBuilder.this, "No chart element", Toast.LENGTH_SHORT).show();
+            Toast.makeText(MainActivity.this, "No chart element", Toast.LENGTH_SHORT).show();
           } else {
             // display information of the clicked point
             Toast.makeText(
-                ZozoXYChartBuilder.this,
+                    MainActivity.this,
                 "Chart element in series index " + seriesSelection.getSeriesIndex()
                     + " data point index " + seriesSelection.getPointIndex() + " was clicked"
                     + " closest point value X=" + seriesSelection.getXValue() + ", Y="
@@ -407,66 +418,78 @@ public class ZozoXYChartBuilder extends Activity {
       mChartView.repaint();
     }
   }
-
-  /**
-   * Enable or disable the add data to series widgets
-   * 
-   * @param enabled the enabled state
-   */
-  private void setSeriesWidgetsEnabled(boolean enabled) {
-    if(D){
-      Log.i(TAG, "setSeriesWidgetsEnabled");}
-
-  }
-
-    private void waveUpdataRoutine()
+  
+  
+    private void waveUpdataRoutine(float mx,float my,float mz)
     {
-        int y = 0;
-        final int length = SineWaveSim.length;
-        Log.i(TAG, "length=" + "" + length);        //mDataset.removeSeries(mCurrentSeries);
-
+        float y_min = 32768, y_max = -32767;
         if (EnableSerise1) {
-            y = (int) ((int) SineWaveSim[ptr] | ((int) SineWaveSim[ptr + 1] << 8));
-            if (y > 0x8000) y -= 0x10000;
-            xyseries1.add(x_index, y);
+            xyseries1.add(x_index, mx);
+            if(mx > y_max)
+            {
+                y_max = mx;
+            }
+            else if(mx < y_min)
+            {
+                y_min = mx;
+            }
+
         }
         if (EnableSerise2) {
-            int ptr_buf = ptr + 40;
-            if (ptr_buf >= length) ptr_buf -= length;
-            y = (int) ((int) SineWaveSim[ptr_buf] | ((int) SineWaveSim[ptr_buf + 1] << 8));
-            if (y > 0x8000) y -= 0x10000;
-            xyseries2.add(x_index, y);
+            xyseries2.add(x_index, my);
+            if(my > y_max)
+            {
+                y_max = my;
+            }
+            else if(my < y_min)
+            {
+                y_min = my;
+            }
         }
         if (EnableSerise3) {
-            int ptr_buf = ptr + 80;
-            if (ptr_buf >= length) ptr_buf -= length;
-            y = (int) ((int) SineWaveSim[ptr_buf] | ((int) SineWaveSim[ptr_buf + 1] << 8));
-            if (y > 0x8000) y -= 0x10000;
-            xyseries3.add(x_index, y);
+            xyseries3.add(x_index, mz);
+            if(mz > y_max)
+            {
+                y_max = mz;
+            }
+            else if(mz < y_min)
+            {
+                y_min = mz;
+            }
         }
-        ptr += 2;
-        x_index += 2;
-        if (ptr >= length) ptr = 0;
-
-        //更新UI
-        //mChartView.repaint();
+        x_index += 1;
         mChartView.postInvalidate();
 
-        //延长X_MAX造成右移效果
-        if (x_index * 1.2 > X_MAX) {
-            X_MAX *= 1.2;//按2倍速度延长 可以设置成speed
-            mRenderer.setXAxisMax(X_MAX);// 设置X最大值
+        if(y_max > Y_MAX)
+        {
+            Y_MAX = y_max * 1.1;
+            mRenderer.setXAxisMax(Y_MAX);
+        }
+        else if(y_min < Y_MIN)
+        {
+            if(y_min<0)
+                Y_MIN = y_min * 1.1;
+            mRenderer.setXAxisMax(Y_MIN);
         }
 
-        Log.i(TAG, "ptr=" + "" + ptr + "," + "y=" + "" + y);
+        if (x_index * 1.2 > X_MAX) {
+            X_MAX *= 1.2;//
+            X_MIN = X_MAX - 100;
+            mRenderer.setXAxisMax(X_MAX);
+            mRenderer.setXAxisMax(X_MIN);//
+        }
+
     }
-    private void startTimer()
+
+
+/*    private void startTimer()
     {
         if(mTimer == null)
         {
+            //1.creator timer
             mTimer = new Timer();
 
-            //2.初始化计时器任务。
+            //2.creator task
             if(mTask == null)
             {
                 mTask = new TimerTask() {
@@ -477,14 +500,14 @@ public class ZozoXYChartBuilder extends Activity {
                     }
                 };
             }
-            //3.启动定时器
+            //3.start timer
                 mTimer.schedule(mTask, 2000, 500);
         }
 
-    }
+    }*/
 
 
-    private void stopTimer()
+/*    private void stopTimer()
     {
         if(mTimer != null)
         {
@@ -496,6 +519,97 @@ public class ZozoXYChartBuilder extends Activity {
             mTask.cancel();
             mTask = null;
         }
-    }
+    }*/
 
+    /*
+     * SensorEventListener接口的实现，需要实现两个方法
+     * 方法1 onSensorChanged 当数据变化的时候被触发调用
+     * 方法2 onAccuracyChanged 当获得数据的精度发生变化的时候被调用，比如突然无法获得数据时
+     * */
+    final SensorEventListener myAccelerometerListener = new SensorEventListener() {
+
+        //复写onSensorChanged方法
+        public void onSensorChanged(SensorEvent sensorEvent) {
+            Log.i(TAG, "onSensorChanged");
+            if (sensorEvent.sensor.getType() == Sensor.TYPE_ACCELEROMETER) {
+                Log.i(TAG, "TYPE_ACCELEROMETER");
+
+                //图解中已经解释三个值的含义
+                float X_lateral = sensorEvent.values[0];
+                float Y_longitudinal = sensorEvent.values[1];
+                float Z_vertical = sensorEvent.values[2];
+
+
+                Log.i(TAG, "\n accel_x " + X_lateral);
+                Log.i(TAG, "\n accel_y " + Y_longitudinal);
+                Log.i(TAG, "\n accel_z " + Z_vertical);
+            }
+            if (sensorEvent.sensor.getType() == Sensor.TYPE_GRAVITY) {
+                Log.i(TAG, "TYPE_GRAVITY");
+
+                //图解中已经解释三个值的含义
+                float X_lateral = sensorEvent.values[0];
+                float Y_longitudinal = sensorEvent.values[1];
+                float Z_vertical = sensorEvent.values[2];
+
+                waveUpdataRoutine(sensorEvent.values[0],sensorEvent.values[1],sensorEvent.values[2]);
+                Log.i(TAG, "\n gaccel_x " + X_lateral);
+                Log.i(TAG, "\n gaccel_y " + Y_longitudinal);
+                Log.i(TAG, "\n gaccel_z " + Z_vertical);
+            }
+            if (sensorEvent.sensor.getType() == Sensor.TYPE_LINEAR_ACCELERATION) {
+/*                Log.i(TAG, "TYPE_LINEAR_ACCELERATION");
+
+                //图解中已经解释三个值的含义
+                float X_lateral = sensorEvent.values[0];
+                float Y_longitudinal = sensorEvent.values[1];
+                float Z_vertical = sensorEvent.values[2];
+
+
+                Log.i(TAG, "\n Laccel_x " + X_lateral);
+                Log.i(TAG, "\n Laccel_y " + Y_longitudinal);
+                Log.i(TAG, "\n Laccel_z " + Z_vertical);*/
+
+                waveUpdataRoutine(sensorEvent.values[0],sensorEvent.values[1],sensorEvent.values[2]);
+            }
+
+            if (sensorEvent.sensor.getType() == Sensor.TYPE_ORIENTATION) {
+                Log.i(TAG, "TYPE_ORIENTATION");
+
+                //图解中已经解释三个值的含义
+                float X_heading = sensorEvent.values[0];
+                float Y_pitch = sensorEvent.values[1];
+                float Z_roll = sensorEvent.values[2];
+
+
+                Log.i(TAG, "\n heading " + X_heading);
+                Log.i(TAG, "\n pitch " + Y_pitch);
+                Log.i(TAG, "\n roll " + Z_roll);
+            }
+
+        }
+
+        //复写onAccuracyChanged方法
+        public void onAccuracyChanged(Sensor sensor, int accuracy) {
+            Log.i(TAG, "onAccuracyChanged");
+        }
+    };
+
+    @Override
+    public void onPause(){
+        Log.i(TAG, "onPause");
+        /*
+          * 很关键的部分：注意，说明文档中提到，即使activity不可见的时候，感应器依然会继续的工作，测试的时候可以发现，没有正常的刷新频率
+          * 也会非常高，所以一定要在onPause方法中关闭触发器，否则讲耗费用户大量电量，很不负责。
+          * */
+        sm.unregisterListener(myAccelerometerListener);
+        super.onPause();
+    }
+    @Override
+    protected void onDestroy() {
+        System.out.println("destory");
+        super.onDestroy();
+    }
+	 
+	
 }
