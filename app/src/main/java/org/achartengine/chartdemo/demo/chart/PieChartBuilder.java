@@ -17,8 +17,7 @@ package org.achartengine.chartdemo.demo.chart;
 
 import org.achartengine.ChartFactory;
 import org.achartengine.GraphicalView;
-//import org.achartengine.chartdemo.demo.R;
-import com.example.achartmotion.R;
+import org.achartengine.chartdemo.demo.R;
 import org.achartengine.model.CategorySeries;
 import org.achartengine.model.SeriesSelection;
 import org.achartengine.renderer.DefaultRenderer;

@@ -26,6 +26,7 @@ import org.achartengine.chartdemo.demo.chart.BudgetDoughnutChart;
 import org.achartengine.chartdemo.demo.chart.BudgetPieChart;
 import org.achartengine.chartdemo.demo.chart.CombinedTemperatureChart;
 import org.achartengine.chartdemo.demo.chart.IDemoChart;
+import org.achartengine.chartdemo.demo.chart.MotionXYChartBuilder;
 import org.achartengine.chartdemo.demo.chart.MultipleTemperatureChart;
 import org.achartengine.chartdemo.demo.chart.PieChartBuilder;
 import org.achartengine.chartdemo.demo.chart.ProjectStatusBubbleChart;
@@ -65,7 +66,7 @@ public class ChartDemo extends ListActivity {
 
   final boolean D = true;
   private static final String TAG = "ChartDemo";
-  int CustomizationChartSizw =3;
+  int CustomizationChartSizw =4;
 
   /** Called when the activity is first created. */
   @Override
@@ -85,6 +86,13 @@ public class ChartDemo extends ListActivity {
       mMenuSummary[2] = "A demo is customization by zozo line chart into a graphical activity";
       if(D){Log.i(TAG, "CustomizationChartSizw == 3");}
 
+    }
+    else if(CustomizationChartSizw == 4)
+    {
+      mMenuText[2] = "zozo line chart demo";
+      mMenuSummary[2] = "A demo is customization by zozo line chart into a graphical activity";
+      mMenuText[3] = "motion line chart demo";
+      mMenuSummary[3] = "motion line chart into a graphical activity";
     }
     for (int i = 0; i < length; i++) {
       mMenuText[i + CustomizationChartSizw] = mCharts[i].getName();
@@ -123,6 +131,8 @@ public class ChartDemo extends ListActivity {
       intent = new Intent(this, PieChartBuilder.class);
     } else if(position == 2){
       intent = new Intent(this, ZozoXYChartBuilder.class);
+    }else if(position == 3){
+      intent = new Intent(this, MotionXYChartBuilder.class);
     }else if (position <= mCharts.length + 1) {
       intent = mCharts[position - CustomizationChartSizw].execute(this);
     } else {

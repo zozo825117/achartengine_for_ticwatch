@@ -11,5 +11,9 @@
 	<string name="stop_button">STOP</string>
 	<string name="start_button">START</string>
 	<string name="clear_button">CLEAR</string>
+	<string name="zoom_y_plus">Y+</string>
+	<string name="zoom_y_dec">Y-</string>
+	<string name="zoom_x_plus">X+</string>
+	<string name="zoom_x_dec">X-</string>
 	<string name="series">series</string>
 </resources>

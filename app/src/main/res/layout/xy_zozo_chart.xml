@@ -30,15 +30,44 @@
                   android:layout_width="fill_parent" android:layout_height="0dip" android:layout_weight="1"/>
 
     <LinearLayout android:orientation="horizontal"
-                  android:layout_width="fill_parent" android:layout_height="wrap_content">
+                  android:layout_width="fill_parent" android:layout_height="wrap_content"
+        android:weightSum="1">
         <Button android:id="@+id/stop_button" android:text="@string/stop_button"
-                android:layout_width="wrap_content" android:layout_height="wrap_content"/>
+                android:layout_width="65dp" android:layout_height="wrap_content"/>
 
         <Button
             android:id="@+id/clear_button"
             android:text="@string/clear_button"
-            android:layout_width="wrap_content"
+            android:layout_width="60dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="0.18" />
+
+        <Button
+            android:id="@+id/zoom_y_plus_button"
+            android:text="@string/zoom_y_plus"
+            android:layout_width="40dp"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center_vertical"
+            android:layout_weight="0.15" />
+
+        <Button
+            android:id="@+id/zoom_y_dec_button"
+            android:text="@string/zoom_y_dec"
+            android:layout_width="40dp"
             android:layout_height="wrap_content" />
+
+        <Button
+            android:id="@+id/zoom_x_plus_button"
+            android:text="@string/zoom_x_plus"
+            android:layout_width="41dp"
+            android:layout_height="wrap_content" />
+
+        <Button
+            android:id="@+id/zoom_x_dec_button"
+            android:text="@string/zoom_x_dec"
+            android:layout_width="41dp"
+            android:layout_height="wrap_content" />
+
     </LinearLayout>
 
 </LinearLayout>
