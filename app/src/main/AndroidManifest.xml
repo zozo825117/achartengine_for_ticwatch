@@ -3,6 +3,9 @@
     package="org.achartengine.chartdemo.demo"
     android:versionCode="1"
     android:versionName="1.0.0" android:installLocation="auto" android:allowBackup="true" >
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"/>
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"/>
+    <uses-permission android:name="android.permission.MOUNT_UNMOUNT_FILESYSTEMS"/>
 
     <application
         android:icon="@drawable/achartengine"
@@ -17,7 +20,7 @@
             </intent-filter>
         </activity>
         <activity android:name="org.achartengine.chartdemo.demo.chart.XYChartBuilder" />
-        <activity android:name="org.achartengine.chartdemo.demo.chart.ZozoXYChartBuilder" />
+        <activity android:name="org.achartengine.chartdemo.demo.chart.ZozoXYChartBuilder"/>
 	<activity android:name="org.achartengine.chartdemo.demo.chart.MotionXYChartBuilder" />
         <activity android:name="org.achartengine.chartdemo.demo.chart.PieChartBuilder" />
         <activity android:name="org.achartengine.GraphicalActivity" />

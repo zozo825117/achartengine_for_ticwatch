@@ -508,9 +508,8 @@ public class MotionXYChartBuilder extends Activity {
 
   @Override
   protected void onResume() {
-    if(D){
-      Log.i(TAG, "onResume");}
-    super.onResume();
+      Log.i(TAG, "onResume");
+      super.onResume();
     if (mChartView == null) {
 /*      LinearLayout layout = (LinearLayout) findViewById(R.id.chart);
       mChartView = ChartFactory.getLineChartView(this, mDataset, mRenderer);
@@ -518,7 +517,7 @@ public class MotionXYChartBuilder extends Activity {
       mRenderer.setClickEnabled(true);
       mRenderer.setSelectableBuffer(10);*/
 
-/*      mChartView.setOnClickListener(new View.OnClickListener() {
+      mChartView.setOnClickListener(new View.OnClickListener() {
         public void onClick(View v) {
           // handle the click event on the chart
           SeriesSelection seriesSelection = mChartView.getCurrentSeriesAndPoint();
@@ -534,7 +533,7 @@ public class MotionXYChartBuilder extends Activity {
                     + seriesSelection.getValue(), Toast.LENGTH_SHORT).show();
           }
         }
-      });*/
+      });
 /*      layout.addView(mChartView, new LayoutParams(LayoutParams.FILL_PARENT,
           LayoutParams.FILL_PARENT));
       boolean enabled = mDataset.getSeriesCount() > 0;

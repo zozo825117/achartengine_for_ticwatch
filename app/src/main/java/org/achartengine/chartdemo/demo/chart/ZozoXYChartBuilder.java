@@ -25,10 +25,13 @@ import org.achartengine.model.XYSeries;
 import org.achartengine.renderer.XYMultipleSeriesRenderer;
 import org.achartengine.renderer.XYSeriesRenderer;
 
+import android.Manifest;
 import android.app.Activity;
+import android.content.pm.PackageManager;
 import android.graphics.Color;
 import android.graphics.Paint;
 import android.os.Bundle;
+import android.support.v4.app.ActivityCompat;
 import android.util.Log;
 import android.view.View;
 import android.view.ViewGroup.LayoutParams;
@@ -37,8 +40,13 @@ import android.widget.EditText;
 import android.widget.LinearLayout;
 import android.widget.Toast;
 
+import java.io.File;
 import java.util.Timer;
 import java.util.TimerTask;
+
+import android.support.v4.content.ContextCompat;
+
+import  com.example.achartmotion.FileStoreTools;
 
 public class ZozoXYChartBuilder extends Activity {
   /** The main dataset that includes all the series that go into a chart. */
@@ -66,7 +74,7 @@ public class ZozoXYChartBuilder extends Activity {
   private GraphicalView mChartView;
 
   final boolean D = true;
-  private static final String TAG = "XYChartBuilder";
+  private static final String TAG = "ZozoXYChartBuilder";
 
   double Y_Buf[] = { 12.3, 12.5, 13.8, 16.8, 20.4, 24.4, 26.4, 26.1, 23.6, 20.3, 17.2,13.9 };
   double X_Buf[] = { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12 };
@@ -104,6 +112,8 @@ public class ZozoXYChartBuilder extends Activity {
     private XYSeriesRenderer datarenderer1,datarenderer2,datarenderer3;
     private Timer mTimer;
     private TimerTask mTask;
+
+    public static final int EXTERNAL_STORAGE_REQ_CODE = 10 ;
 
   @Override
   protected void onSaveInstanceState(Bundle outState) {
@@ -185,6 +195,36 @@ public class ZozoXYChartBuilder extends Activity {
     mRenderer.setSelectableBuffer(10);
     layout.addView(mChartView, new LayoutParams(LayoutParams.FILL_PARENT,
             LayoutParams.FILL_PARENT));*/
+
+      if(requestPermission())
+      {
+          Log.i(TAG, "getSDPath" + FileStoreTools.getSDPath());
+          //
+          String str[] = new String[1000];
+          //Get the text file based on folder
+
+          File file = new File(FileStoreTools.getSDPath() + File.separator +"zozo_file");
+          Log.i(TAG, "file full = " + file + "file path=" + file.getAbsolutePath());
+/*          if(file.exists())
+          {
+              file.delete();
+              Log.i(TAG, "file.delete");
+          }*/
+          for(int i = 0,j=0; i < SineWaveSim.length;i+=2)
+          {
+              int y;
+              String str_buf;
+              y = (int) ((int) SineWaveSim[i] | ((int) SineWaveSim[i + 1] << 8));
+              if (y > 0x8000) y -= 0x10000;
+              str[i] = ""+ y + ",";
+              str_buf = formatStr(str[i],7);
+              Log.i(TAG, str_buf);
+              Log.i(TAG, "file = " + file);
+              FileStoreTools.saveFile(str_buf,file.getPath(),"_zozo_xy_char.txt");
+          }
+
+
+      }
 
 
     mEnableButton.setOnClickListener(new View.OnClickListener() {
@@ -497,4 +537,74 @@ public class ZozoXYChartBuilder extends Activity {
         }
     }
 
+    public boolean requestPermission(){
+        //判断当前Activity是否已经获得了该权限
+        if (ContextCompat.checkSelfPermission(this,
+                Manifest.permission.WRITE_EXTERNAL_STORAGE)
+                != PackageManager.PERMISSION_GRANTED) {
+
+            //如果App的权限申请曾经被用户拒绝过，就需要在这里跟用户做出解释
+            if (ActivityCompat.shouldShowRequestPermissionRationale(this,
+                    Manifest.permission.WRITE_EXTERNAL_STORAGE)) {
+                Toast.makeText(this,"please give me the permission", Toast.LENGTH_SHORT).show();
+            } else {
+                //进行权限请求
+                ActivityCompat.requestPermissions(this,
+                        new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE},
+                        EXTERNAL_STORAGE_REQ_CODE);
+
+                Log.i(TAG, "ActivityCompat.requestPermissions");
+            }
+
+            return  false;
+        }
+        else
+        {
+            return  true;
+        }
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode,
+                                           String permissions[], int[] grantResults) {
+        switch (requestCode) {
+            case EXTERNAL_STORAGE_REQ_CODE: {
+                // 如果请求被拒绝，那么通常grantResults数组为空
+                if (grantResults.length > 0
+                        && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                    //申请成功，进行相应操作
+                    // createFile("hello.txt");
+                    //CreateFilePermissionFlag = true;
+                    Log.i(TAG, "PackageManager.PERMISSION_GRANTED  ok");
+                    Log.i(TAG, "getSDPath" + FileStoreTools.getSDPath());
+                    FileStoreTools.saveFile(SineWaveSim.toString(), FileStoreTools.getSDPath(), "zozo test.txt");
+                } else {
+                    //申请失败，可以继续向用户解释。
+                    //CreateFilePermissionFlag = false;
+                    Log.i(TAG, "PackageManager.PERMISSION_GRANTED  refused");
+                }
+                return;
+            }
+        }
+    }
+
+    private static String formatStr(String str,int length)
+    {
+        if (str == null) {
+            return null;
+        }
+        int strLen = str.length();
+        if (strLen == length) {
+            return str;
+        } else if (strLen < length) {
+            int temp = length - strLen;
+            String tem = "";
+            for (int i = 0; i < temp; i++) {
+                tem = tem + " ";
+            }
+            return tem + str;
+        }else{
+            return str.substring(0,length);
+        }
+    }
 }
