@@ -82,7 +82,7 @@ public class GraphicalView extends View {
   /** If the graphical view is drawn. */
   private boolean mDrawn;
 
-  final boolean D = true;
+  final boolean D = false;
   private static final String TAG = "GraphicalView";
   /**
    * Creates a new graphical view.

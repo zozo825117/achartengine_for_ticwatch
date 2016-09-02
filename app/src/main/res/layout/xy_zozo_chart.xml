@@ -33,11 +33,11 @@
                   android:layout_width="fill_parent" android:layout_height="wrap_content"
         android:weightSum="1">
         <Button android:id="@+id/stop_button" android:text="@string/stop_button"
-                android:layout_width="65dp" android:layout_height="wrap_content"/>
+                android:layout_width="69dp" android:layout_height="wrap_content"/>
 
         <Button
-            android:id="@+id/clear_button"
-            android:text="@string/clear_button"
+            android:id="@+id/save_button"
+            android:text="@string/save_button"
             android:layout_width="60dp"
             android:layout_height="wrap_content"
             android:layout_weight="0.18" />

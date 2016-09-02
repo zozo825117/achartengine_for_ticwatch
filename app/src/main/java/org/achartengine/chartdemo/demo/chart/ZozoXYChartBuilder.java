@@ -156,7 +156,7 @@ public class ZozoXYChartBuilder extends Activity {
     mEnableButton = (Button) findViewById(R.id.enable_button);
     mDisableButton = (Button) findViewById(R.id.disable_button);
     mStopButton = (Button) findViewById(R.id.stop_button);
-    mClearButton = (Button) findViewById(R.id.clear_button);
+    mClearButton = (Button) findViewById(R.id.save_button);
 
     // set some properties on the main renderer
     mRenderer.setApplyBackgroundColor(true);
@@ -588,7 +588,7 @@ public class ZozoXYChartBuilder extends Activity {
         }
     }
 
-    private static String formatStr(String str,int length)
+    static String formatStr(String str, int length)
     {
         if (str == null) {
             return null;
