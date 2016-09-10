@@ -26,7 +26,6 @@ import org.achartengine.chartdemo.demo.chart.BudgetDoughnutChart;
 import org.achartengine.chartdemo.demo.chart.BudgetPieChart;
 import org.achartengine.chartdemo.demo.chart.CombinedTemperatureChart;
 import org.achartengine.chartdemo.demo.chart.IDemoChart;
-import org.achartengine.chartdemo.demo.chart.MotionXYChartBuilder;
 import org.achartengine.chartdemo.demo.chart.MultipleTemperatureChart;
 import org.achartengine.chartdemo.demo.chart.PieChartBuilder;
 import org.achartengine.chartdemo.demo.chart.ProjectStatusBubbleChart;
@@ -42,6 +41,9 @@ import org.achartengine.chartdemo.demo.chart.TrigonometricFunctionsChart;
 import org.achartengine.chartdemo.demo.chart.WeightDialChart;
 import org.achartengine.chartdemo.demo.chart.XYChartBuilder;
 import org.achartengine.chartdemo.demo.chart.ZozoXYChartBuilder;
+
+import com.example.achartmotion.MotionXYChartBuilder;
+import com.example.achartmotion.TicXYChartBuilder;
 
 import android.app.ListActivity;
 import android.content.Intent;
@@ -66,7 +68,7 @@ public class ChartDemo extends ListActivity {
 
   final boolean D = true;
   private static final String TAG = "ChartDemo";
-  int CustomizationChartSizw =4;
+  int CustomizationChartSizw =5;
 
   /** Called when the activity is first created. */
   @Override
@@ -80,19 +82,22 @@ public class ChartDemo extends ListActivity {
     mMenuSummary[0] = "A demo on how to include a clickable line chart into a graphical activity";
     mMenuText[1] = "Embedded pie chart demo";
     mMenuSummary[1] = "A demo on how to include a clickable pie chart into a graphical activity";
-    if(CustomizationChartSizw == 3)
+    if(CustomizationChartSizw >= 3)
     {
       mMenuText[2] = "zozo line chart demo";
       mMenuSummary[2] = "A demo is customization by zozo line chart into a graphical activity";
       if(D){Log.i(TAG, "CustomizationChartSizw == 3");}
 
     }
-    else if(CustomizationChartSizw == 4)
+    if(CustomizationChartSizw >= 4)
     {
-      mMenuText[2] = "zozo line chart demo";
-      mMenuSummary[2] = "A demo is customization by zozo line chart into a graphical activity";
       mMenuText[3] = "motion line chart demo";
       mMenuSummary[3] = "motion line chart into a graphical activity";
+    }
+    if(CustomizationChartSizw >= 5)
+    {
+      mMenuText[4] = "ticwear motion line chart demo";
+      mMenuSummary[4] = "motion line chart into a graphical activity";
     }
     for (int i = 0; i < length; i++) {
       mMenuText[i + CustomizationChartSizw] = mCharts[i].getName();
@@ -133,6 +138,8 @@ public class ChartDemo extends ListActivity {
       intent = new Intent(this, ZozoXYChartBuilder.class);
     }else if(position == 3){
       intent = new Intent(this, MotionXYChartBuilder.class);
+    }else if(position == 4){
+      intent = new Intent(this, TicXYChartBuilder.class);
     }else if (position <= mCharts.length + 1) {
       intent = mCharts[position - CustomizationChartSizw].execute(this);
     } else {

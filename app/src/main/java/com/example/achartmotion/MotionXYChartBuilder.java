@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.achartengine.chartdemo.demo.chart;
+package com.example.achartmotion;
 
 import org.achartengine.ChartFactory;
 import org.achartengine.GraphicalView;
@@ -24,6 +24,7 @@ import org.achartengine.model.XYMultipleSeriesDataset;
 import org.achartengine.model.XYSeries;
 import org.achartengine.renderer.XYMultipleSeriesRenderer;
 import org.achartengine.renderer.XYSeriesRenderer;
+import org.achartengine.chartdemo.demo.chart.ZozoXYChartBuilder;
 
 import android.Manifest;
 import android.app.Activity;

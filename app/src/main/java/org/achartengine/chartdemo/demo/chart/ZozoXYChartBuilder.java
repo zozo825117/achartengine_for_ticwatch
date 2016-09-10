@@ -588,7 +588,7 @@ public class ZozoXYChartBuilder extends Activity {
         }
     }
 
-    static String formatStr(String str, int length)
+    public static String formatStr(String str, int length)
     {
         if (str == null) {
             return null;
