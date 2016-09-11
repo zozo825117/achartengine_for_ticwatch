@@ -156,6 +156,9 @@ public class TicXYChartBuilder extends Activity implements MobvoiApiClient.Conne
 
     String SendMSG;
 
+    String START_SENSOR_PATH = "/start-sensor";
+    String START_ORIENTATION_PATH = "/EnableOrientation";
+
     /**
      * ATTENTION: This was auto-generated to implement the App Indexing API.
      * See https://g.co/AppIndexing/AndroidStudio for more information.
@@ -294,9 +297,9 @@ public class TicXYChartBuilder extends Activity implements MobvoiApiClient.Conne
                 .build();
         mHandler = new Handler();
 
-        SendMSG = "/start-sensor";
+/*        SendMSG = "/start-sensor";
         Log.d(TAG, "StartWearableActivityTask SendMSG=" + SendMSG);
-        new StartWearableActivityTask().execute();
+        new StartWearableActivityTask().execute();*/
 
         mEnableButton.setOnClickListener(new View.OnClickListener() {
             public void onClick(View v) {
@@ -650,10 +653,20 @@ public class TicXYChartBuilder extends Activity implements MobvoiApiClient.Conne
             mHandler.post(new Runnable() {
                 @Override
                 public void run() {
-                    Log.d(TAG,"x=" + "" + xyz[0] + "y=" + "" + xyz[1] + "z=" + "" + xyz[2]);
+                    Log.d(TAG,"Accelerometer x=" + "" + xyz[0] + "y=" + "" + xyz[1] + "z=" + "" + xyz[2]);
                 }
             });
             waveUpdataRoutine(Sensor.TYPE_LINEAR_ACCELERATION, Float.valueOf(xyz[0]) ,Float.valueOf(xyz[1]),Float.valueOf(xyz[2]));
+        }else if(event.getPath().equals("Orientation")){
+            byte[] data = event.getData();
+            final String SensorMessage = new String(data);
+            final String[] xyz = SensorMessage.split(",");
+            mHandler.post(new Runnable() {
+                @Override
+                public void run() {
+                    Log.d(TAG,"Orientation x=" + "" + xyz[0] + "y=" + "" + xyz[1] + "z=" + "" + xyz[2]);
+                }
+            });
         }
     }
 
@@ -789,7 +802,8 @@ public class TicXYChartBuilder extends Activity implements MobvoiApiClient.Conne
             }
         }
 
-        SendMSG = "EnableAcc";
+        //SendMSG = "EnableAcc";
+        SendMSG = START_SENSOR_PATH;
         Log.d(TAG, "StartWearableActivityTask SendMSG=" + SendMSG);
         new StartWearableActivityTask().execute();
 
@@ -844,7 +858,7 @@ public class TicXYChartBuilder extends Activity implements MobvoiApiClient.Conne
         * 参数3 ：模式 可选数据变化的刷新频率
         * */
         //sm.registerListener(myAccelerometerListener, sm.getDefaultSensor(Sensor.TYPE_ORIENTATION), SensorManager.SENSOR_DELAY_FASTEST);
-        SendMSG = "EnableOrentation";
+        SendMSG = START_ORIENTATION_PATH;
         Log.d(TAG, "StartWearableActivityTask SendMSG=" + SendMSG);
         new StartWearableActivityTask().execute();
     }
