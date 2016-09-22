@@ -119,7 +119,8 @@ public class MotionXYChartBuilder extends Activity {
     private GraphicalView mChartView;
 
     boolean D = true;
-    boolean M = false;
+    boolean M = true;
+    boolean UseOrientation = true;
     private static final String TAG = "MotionXYChartBuilder";
 
     public static final int EXTERNAL_STORAGE_REQ_CODE = 10;
@@ -141,6 +142,11 @@ public class MotionXYChartBuilder extends Activity {
     private static Handler handler = new Handler(Looper.getMainLooper());
     private static Toast toast = null;
     private final static Object synObj = new Object();
+
+    private float[] accelerometerValues = new float[3];
+    private float[] magneticFieldValues = new float[3];
+
+     final int SensorDelay = SensorManager.SENSOR_DELAY_UI;
     /**
      * ATTENTION: This was auto-generated to implement the App Indexing API.
      * See https://g.co/AppIndexing/AndroidStudio for more information.
@@ -390,10 +396,18 @@ public class MotionXYChartBuilder extends Activity {
                     mSaveButton.setEnabled(true);
                 } else if (mStopButton.getText().toString().equals("START")) {
                     if (EnableSerise1) {
-                        sm.registerListener(myAccelerometerListener, sm.getDefaultSensor(Sensor.TYPE_LINEAR_ACCELERATION), SensorManager.SENSOR_DELAY_FASTEST);
+                        sm.registerListener(myAccelerometerListener, sm.getDefaultSensor(Sensor.TYPE_LINEAR_ACCELERATION), SensorDelay);
                     }
                     if (EnableSerise2) {
-                        sm.registerListener(myAccelerometerListener, sm.getDefaultSensor(Sensor.TYPE_ORIENTATION), SensorManager.SENSOR_DELAY_FASTEST);
+                        if(!UseOrientation)
+                            sm.registerListener(myAccelerometerListener, sm.getDefaultSensor(Sensor.TYPE_ORIENTATION), SensorDelay);
+                        else
+                        {
+                            sm.registerListener(myAccelerometerListener, sm.getDefaultSensor(Sensor.TYPE_ACCELEROMETER), SensorDelay);
+                            sm.registerListener(myAccelerometerListener, sm.getDefaultSensor(Sensor.TYPE_MAGNETIC_FIELD), SensorDelay);
+                            magneticFieldValues = null;
+                            accelerometerValues = null;
+                        }
                     }
                     mStopButton.setText("STOP");
                     mSaveButton.setEnabled(false);
@@ -608,10 +622,18 @@ public class MotionXYChartBuilder extends Activity {
         super.onResume();
         if (mChartView != null && mStopButton.getText().equals("STOP")){
             if (EnableSerise1) {
-                sm.registerListener(myAccelerometerListener, sm.getDefaultSensor(Sensor.TYPE_LINEAR_ACCELERATION), SensorManager.SENSOR_DELAY_FASTEST);
+                sm.registerListener(myAccelerometerListener, sm.getDefaultSensor(Sensor.TYPE_LINEAR_ACCELERATION), SensorDelay);
             }
             if (EnableSerise2) {
-                sm.registerListener(myAccelerometerListener, sm.getDefaultSensor(Sensor.TYPE_ORIENTATION), SensorManager.SENSOR_DELAY_FASTEST);
+                if(!UseOrientation)
+                    sm.registerListener(myAccelerometerListener, sm.getDefaultSensor(Sensor.TYPE_ORIENTATION), SensorDelay);
+                else
+                {
+                    sm.registerListener(myAccelerometerListener, sm.getDefaultSensor(Sensor.TYPE_ACCELEROMETER), SensorDelay);
+                    sm.registerListener(myAccelerometerListener, sm.getDefaultSensor(Sensor.TYPE_MAGNETIC_FIELD), SensorDelay);
+                    magneticFieldValues = null;
+                    accelerometerValues = null;
+                }
             }
             mChartView.repaint();
         }
@@ -736,7 +758,7 @@ public class MotionXYChartBuilder extends Activity {
         * 参数2 ：Sensor 一个服务可能有多个Sensor实现，此处调用getDefaultSensor获取默认的Sensor
         * 参数3 ：模式 可选数据变化的刷新频率
         * */
-        sm.registerListener(myAccelerometerListener, sm.getDefaultSensor(Sensor.TYPE_LINEAR_ACCELERATION), SensorManager.SENSOR_DELAY_FASTEST);
+        sm.registerListener(myAccelerometerListener, sm.getDefaultSensor(Sensor.TYPE_LINEAR_ACCELERATION), SensorDelay);
     }
     private void enableOrientationWave() {
         if (!InitSerise2) {
@@ -787,7 +809,15 @@ public class MotionXYChartBuilder extends Activity {
         * 参数2 ：Sensor 一个服务可能有多个Sensor实现，此处调用getDefaultSensor获取默认的Sensor
         * 参数3 ：模式 可选数据变化的刷新频率
         * */
-        sm.registerListener(myAccelerometerListener, sm.getDefaultSensor(Sensor.TYPE_ORIENTATION), SensorManager.SENSOR_DELAY_FASTEST);
+        if(!UseOrientation)
+            sm.registerListener(myAccelerometerListener, sm.getDefaultSensor(Sensor.TYPE_ORIENTATION), SensorDelay);
+        else
+        {
+            sm.registerListener(myAccelerometerListener, sm.getDefaultSensor(Sensor.TYPE_ACCELEROMETER), SensorDelay);
+            sm.registerListener(myAccelerometerListener, sm.getDefaultSensor(Sensor.TYPE_MAGNETIC_FIELD), SensorDelay);
+            magneticFieldValues = null;
+            accelerometerValues = null;
+        }
     }
     private void disableAccWave(){
         if (EnableSerise1) {
@@ -822,9 +852,9 @@ public class MotionXYChartBuilder extends Activity {
 
         //复写onSensorChanged方法
         public void onSensorChanged(SensorEvent sensorEvent) {
-            if(M)Log.i(TAG, "onSensorChanged");
-            if (sensorEvent.sensor.getType() == Sensor.TYPE_ACCELEROMETER) {
-/*                if(D)Log.i(TAG, "TYPE_ACCELEROMETER");
+            //if(M)Log.i(TAG, "onSensorChanged");
+/*            if (sensorEvent.sensor.getType() == Sensor.TYPE_ACCELEROMETER) {
+*//*                if(D)Log.i(TAG, "TYPE_ACCELEROMETER");
 
                 //图解中已经解释三个值的含义
                 float X_lateral = sensorEvent.values[0];
@@ -834,8 +864,8 @@ public class MotionXYChartBuilder extends Activity {
 
                 if(D)Log.i(TAG, "\n accel_x " + X_lateral);
                 if(D)Log.i(TAG, "\n accel_y " + Y_longitudinal);
-                if(D)Log.i(TAG, "\n accel_z " + Z_vertical);*/
-            }
+                if(D)Log.i(TAG, "\n accel_z " + Z_vertical);*//*
+            }*/
             if (sensorEvent.sensor.getType() == Sensor.TYPE_GRAVITY) {
 /*                if(D)Log.i(TAG, "TYPE_GRAVITY");
 
@@ -879,6 +909,29 @@ public class MotionXYChartBuilder extends Activity {
                 Log.i(TAG, "\n roll " + Z_roll);*/
                 if(M)Log.d(TAG, "TYPE_ORIENTATION");
                 waveUpdataRoutine(Sensor.TYPE_ORIENTATION,sensorEvent.values[0], sensorEvent.values[1], sensorEvent.values[2]);
+            }
+            if (sensorEvent.sensor.getType() == Sensor.TYPE_ACCELEROMETER) {
+                accelerometerValues = sensorEvent.values;
+            }
+            if (sensorEvent.sensor.getType() == Sensor.TYPE_MAGNETIC_FIELD) {
+                magneticFieldValues = sensorEvent.values;
+            }
+
+            if(UseOrientation)
+            {
+                if(accelerometerValues != null && magneticFieldValues != null)
+                {
+                    float[] values = new float[3];
+                    float[] R = new float[9];
+                    SensorManager.getRotationMatrix(R, null, accelerometerValues,
+                            magneticFieldValues);
+                    values = SensorManager.getOrientation(R, values);
+                    if(M)Log.d(TAG, "getOrientation");
+                    waveUpdataRoutine(Sensor.TYPE_ORIENTATION,values[0], values[1], values[2]);
+                    accelerometerValues = null;
+                    magneticFieldValues = null;
+                }
+
             }
 
         }

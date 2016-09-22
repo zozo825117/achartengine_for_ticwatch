@@ -49,6 +49,7 @@ import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Handler;
+import android.os.Looper;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
 import android.util.Log;
@@ -83,21 +84,21 @@ public class TicXYChartBuilder extends Activity implements MobvoiApiClient.Conne
     /**
      * The most recently added series.
      */
-    private XYSeries mCurrentSeries;
+    //private XYSeries mCurrentSeries;
     /**
      * The most recently created renderer, customizing the current series.
      */
-    private XYSeriesRenderer mCurrentRenderer;
+    //private XYSeriesRenderer mCurrentRenderer;
 /*  *//** Button for creating a new series of data. *//*
-  private Button mNewSeries;*/
+  //private Button mNewSeries;*/
     /**
      * Button for adding entered data to the current series.
      */
-    private Button mEnableButton;
+    Button mEnableButton;
     /**
      * Button for adding entered data to the current series.
      */
-    private Button mDisableButton;
+    Button mDisableButton;
     /**
      * Button for adding entered data to the current series.
      */
@@ -105,23 +106,23 @@ public class TicXYChartBuilder extends Activity implements MobvoiApiClient.Conne
     /**
      * Button for adding entered data to the current series.
      */
-    private Button mYplusButton;
+    Button mYplusButton;
     /**
      * Button for adding entered data to the current series.
      */
-    private Button mYdecButton;
+    Button mYdecButton;
     /**
      * Button for adding entered data to the current series.
      */
-    private Button mXplusButton;
+    Button mXplusButton;
     /**
      * Button for adding entered data to the current series.
      */
-    private Button mXdecButton;
+    Button mXdecButton;
     /**
      * Button for adding entered data to the current series.
      */
-    private Button mClearButton;
+    //private Button mClearButton;
     /**
      * Button for adding entered data to the current series.
      */
@@ -134,14 +135,15 @@ public class TicXYChartBuilder extends Activity implements MobvoiApiClient.Conne
      */
     private GraphicalView mChartView;
 
-    final boolean D = true;
+    boolean D = true;
+    boolean M = false;
     private static final String TAG = "TicXYChartBuilder";
 
     public static final int EXTERNAL_STORAGE_REQ_CODE = 10;
 
     double x_index = 0;
     double X_MIN = 0;
-    double X_MAX = 100;
+    double X_MAX = 300;
     double Y_MIN = -3;
     double Y_MAX = 3;
     float Y_min_buf = -3, Y_max_buf = 3;
@@ -149,7 +151,7 @@ public class TicXYChartBuilder extends Activity implements MobvoiApiClient.Conne
     boolean EnableSerise1 = false, EnableSerise2 = false, InitSerise1 = false, InitSerise2 = false;
     double Serise1StartIndex,Serise2StartIndex;
     private XYSeries xyseries1, xyseries2, xyseries3,xyseries4, xyseries5, xyseries6;//数据
-    private XYSeriesRenderer datarenderer1, datarenderer2, datarenderer3,datarenderer4, datarenderer5, datarenderer6;
+    XYSeriesRenderer datarenderer1, datarenderer2, datarenderer3,datarenderer4, datarenderer5, datarenderer6;
 
     private MobvoiApiClient mMobvoiApiClient;
     private Handler mHandler;
@@ -158,7 +160,10 @@ public class TicXYChartBuilder extends Activity implements MobvoiApiClient.Conne
 
     String START_SENSOR_PATH = "/start-sensor";
     String START_ORIENTATION_PATH = "/EnableOrientation";
-
+    //toast
+    private static Handler handler = new Handler(Looper.getMainLooper());
+    private static Toast toast = null;
+    private final static Object synObj = new Object();
     /**
      * ATTENTION: This was auto-generated to implement the App Indexing API.
      * See https://g.co/AppIndexing/AndroidStudio for more information.
@@ -224,6 +229,36 @@ public class TicXYChartBuilder extends Activity implements MobvoiApiClient.Conne
         }
     }
 
+    public static void showMessage(final Context act, final String msg) {
+        showMessage(act, msg, Toast.LENGTH_SHORT);
+    }
+
+    public static void showMessage(final Context act, final String msg,
+                                   final int len) {
+        new Thread(new Runnable() {
+            public void run() {
+                handler.post(new Runnable() {
+                    @Override
+                    public void run() {
+                        synchronized (synObj)
+                        {
+                            if (toast != null) {
+                                toast.cancel();
+                                //toast.setText(msg);
+                                //toast.setDuration(len);
+                                toast = Toast.makeText(act, msg, len);
+                            } else {
+                                toast = Toast.makeText(act, msg, len);
+                            }
+                            toast.show();
+                        }
+                    }
+                });
+            }
+        }).start();
+    }
+
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         if (D) {
@@ -282,6 +317,9 @@ public class TicXYChartBuilder extends Activity implements MobvoiApiClient.Conne
         // enable the chart click events
         mRenderer.setClickEnabled(true);
         mRenderer.setSelectableBuffer(10);
+
+        mRenderer.setZoomInLimitX(100);
+        mRenderer.setZoomInLimitY(5);
         //mRenderer.setZoomEnabled(true);
         //mRenderer.setPanEnabled(true);
 
@@ -319,9 +357,11 @@ public class TicXYChartBuilder extends Activity implements MobvoiApiClient.Conne
                 switch (x) {
                     case 1:
                             enableAccWave();
+                            mSaveButton.setEnabled(false);
                         break;
                     case 2:
                             enableOrientationWave();
+                            mSaveButton.setEnabled(false);
                         break;
                     default:
                         break;
@@ -378,6 +418,7 @@ public class TicXYChartBuilder extends Activity implements MobvoiApiClient.Conne
                     //stopTimer();
 
                     mStopButton.setText("START");
+                    mSaveButton.setEnabled(true);
                 } else if (mStopButton.getText().toString().equals("START")) {
                     if (EnableSerise1) {
 
@@ -386,6 +427,7 @@ public class TicXYChartBuilder extends Activity implements MobvoiApiClient.Conne
 
                     }
                     mStopButton.setText("STOP");
+                    mSaveButton.setEnabled(false);
                 }
             }
         });
@@ -409,11 +451,10 @@ public class TicXYChartBuilder extends Activity implements MobvoiApiClient.Conne
                     if(D)Log.i(TAG, "file full = " + file + "file path=" + file.getAbsolutePath());
 
                     //x_index
-                    String str_buf, save_str;
+                    String save_str;
                     for (double i = 0, j = 0; i < x_index; i++) {
                         double y;
 
-                        str_buf = "";
                         save_str = "";
 
                         if(i > Serise1StartIndex){
@@ -450,104 +491,113 @@ public class TicXYChartBuilder extends Activity implements MobvoiApiClient.Conne
 
         mYplusButton.setOnClickListener(new View.OnClickListener() {
             public void onClick(View v) {
-                double y_max, y_min;
+                double y_max, y_min , delta;
                 if (EnableSerise1 | EnableSerise2) {
                     y_max = mRenderer.getYAxisMax();
                     y_min = mRenderer.getYAxisMin();
-                    if (y_max > 0) {
-                        y_max /= 1.1;
-                    } else {
-                        y_max *= 1.1;
+
+                    delta =Math.abs(y_max - y_min);
+                    if(D)Log.d(TAG, "YPlus delta = "+""+delta);
+                    if(delta >=mRenderer.getZoomInLimitY())
+                    {
+
+                            y_max -= (delta*0.1/2);
+                            y_min += (delta*0.1/2);
+
+                        if (y_min < y_max) {
+                            mRenderer.setYAxisMax(y_max);
+                            mRenderer.setYAxisMin(y_min);
+                            Y_MAX = y_max;
+                            Y_MIN = y_min;
+                        }
+                        mChartView.repaint();
+                        showMessage(TicXYChartBuilder.this,"YPlus Y  axis= "+""+delta);
+
                     }
 
-                    if (y_min > 0) {
-                        y_min *= 1.1;
-                    } else {
-                        y_min /= 1.1;
-                    }
-                    if (y_min < y_max) {
-                        mRenderer.setYAxisMax(y_max);
-                        mRenderer.setYAxisMin(y_min);
-                    }
-                    mChartView.repaint();
                 }
             }
         });
         mYdecButton.setOnClickListener(new View.OnClickListener() {
             public void onClick(View v) {
-                double y_max, y_min;
+                double y_max, y_min , delta;
                 if (EnableSerise1 | EnableSerise2) {
                     y_max = mRenderer.getYAxisMax();
                     y_min = mRenderer.getYAxisMin();
 
-                    if (y_max > 0) {
-                        y_max *= 1.1;
-                    } else {
-                        y_max /= 1.1;
+                    delta =Math.abs(y_max - y_min);
+                    if(D)Log.d(TAG, "Ydec delta = "+""+delta);
+                    //if(delta >=100)
+                    {
+                            y_max += (delta*0.1/2);
+                            y_min -= (delta*0.1/2);
+
+                        if (y_min < y_max) {
+                            mRenderer.setYAxisMax(y_max);
+                            mRenderer.setYAxisMin(y_min);
+                            Y_MAX = y_max;
+                            Y_MIN = y_min;
+                        }
+                        mChartView.repaint();
+                        showMessage(TicXYChartBuilder.this,"Ydec Y  axis= "+""+delta);
                     }
 
-                    if (y_min > 0) {
-                        y_min /= 1.1;
-                    } else {
-                        y_min *= 1.1;
-                    }
-                    if (y_min < y_max) {
-                        mRenderer.setYAxisMax(y_max);
-                        mRenderer.setYAxisMin(y_min);
-                    }
-
-                    mChartView.repaint();
                 }
 
             }
         });
         mXplusButton.setOnClickListener(new View.OnClickListener() {
             public void onClick(View v) {
-                double x_max, x_min;
+                double x_max, x_min,delta;
                 if (EnableSerise1 | EnableSerise2) {
                     x_max = mRenderer.getXAxisMax();
                     x_min = mRenderer.getXAxisMin();
-                    if (x_max > 0) {
-                        x_max /= 1.1;
-                    } else {
-                        x_max *= 1.1;
+
+                    delta = Math.abs(Math.abs(x_max) - Math.abs(x_min));
+                    if(D)Log.d(TAG, "Xplus delta = "+""+delta);
+                    if(delta >=mRenderer.getZoomInLimitX())
+                    {
+                            x_max -= (delta*0.1/2);
+                            x_min += (delta*0.1/2);
+
+                        if (x_min < x_max) {
+                            mRenderer.setXAxisMax(x_max);
+                            mRenderer.setXAxisMin(x_min);
+                            X_MAX = x_max;
+                            X_MIN = x_min;
+                        }
+                        mChartView.repaint();
                     }
-                    if (x_min > 0) {
-                        x_min *= 1.1;
-                    } else {
-                        x_min /= 1.1;
-                        mRenderer.setYAxisMin(x_min);
-                    }
-                    if (x_min < x_max) {
-                        mRenderer.setXAxisMax(x_max);
-                        mRenderer.setXAxisMin(x_min);
-                    }
-                    mChartView.repaint();
+                    showMessage(TicXYChartBuilder.this,"XPlus X axis= "+""+delta);
+
                 }
 
             }
         });
         mXdecButton.setOnClickListener(new View.OnClickListener() {
             public void onClick(View v) {
-                double x_max, x_min;
+                double x_max, x_min,delta;
                 if (EnableSerise1 | EnableSerise2) {
                     x_max = mRenderer.getXAxisMax();
                     x_min = mRenderer.getXAxisMin();
-                    if (x_max > 0) {
-                        x_max *= 1.1;
-                    } else {
-                        x_max /= 1.1;
+
+                    delta =Math.abs(Math.abs(x_max) - Math.abs(x_min));
+                    if(D)Log.d(TAG, "Xdec delta = "+""+delta);
+                    //if(delta >=100)
+                    {
+
+                        x_max += (delta*0.1/2);
+                        x_min -= (delta*0.1/2);
+
+                        if (x_min < x_max) {
+                            mRenderer.setXAxisMax(x_max);
+                            mRenderer.setXAxisMin(x_min);
+                            X_MAX = x_max;
+                            X_MIN = x_min;
+                        }
+                        mChartView.repaint();
+                        showMessage(TicXYChartBuilder.this,"Xdec X axis= "+""+delta);
                     }
-                    if (x_min > 0) {
-                        x_min /= 1.1;
-                    } else {
-                        x_min *= 1.1;
-                    }
-                    if (x_min < x_max) {
-                        mRenderer.setXAxisMax(x_max);
-                        mRenderer.setXAxisMin(x_min);
-                    }
-                    mChartView.repaint();
                 }
 
             }
@@ -559,15 +609,15 @@ public class TicXYChartBuilder extends Activity implements MobvoiApiClient.Conne
                         // handle the click event on the chart
                         SeriesSelection seriesSelection = mChartView.getCurrentSeriesAndPoint();
                         if (seriesSelection == null) {
-                            Toast.makeText(TicXYChartBuilder.this, "No chart element", Toast.LENGTH_SHORT).show();
+                            showMessage(TicXYChartBuilder.this, "No chart element");
                         } else {
                             // display information of the clicked point
-                            Toast.makeText(
+                            showMessage(
                                     TicXYChartBuilder.this,
                                     "Chart element in series index " + seriesSelection.getSeriesIndex()
-                                            + " data point index " + seriesSelection.getPointIndex() + " was clicked"
-                                            + " closest point value X=" + seriesSelection.getXValue() + ", Y="
-                                            + seriesSelection.getValue(), Toast.LENGTH_SHORT).show();
+                                    + " data point index " + seriesSelection.getPointIndex() + " was clicked"
+                                    + " closest point value X=" + seriesSelection.getXValue() + ", Y="
+                                    + seriesSelection.getValue());
 
                             if(D)Log.i(TAG, "Chart element in series index " + seriesSelection.getSeriesIndex()
                                     + " data point index " + seriesSelection.getPointIndex() + " was clicked"
@@ -586,7 +636,7 @@ public class TicXYChartBuilder extends Activity implements MobvoiApiClient.Conne
     protected void onResume() {
         Log.i(TAG, "onResume");
         super.onResume();
-        if (mChartView != null){
+        if (mChartView != null && mStopButton.getText().equals("STOP")){
             if (EnableSerise1) {
                 //sm.registerListener(myAccelerometerListener, sm.getDefaultSensor(Sensor.TYPE_LINEAR_ACCELERATION), SensorManager.SENSOR_DELAY_FASTEST);
             }
@@ -742,10 +792,16 @@ public class TicXYChartBuilder extends Activity implements MobvoiApiClient.Conne
             xyseries6.add(x_index, mz);
         }
 
-        if (x_index * 1.2 > X_MAX) {
+/*        if (x_index * 1.2 > X_MAX) {
             X_MAX *= 1.2;//
             //X_MIN = X_MAX - 100;
             mRenderer.setXAxisMax(X_MAX);
+        }*/
+        if (x_index  >= X_MAX) {
+            X_MAX += 300/4;//
+            X_MIN += 300/4;
+            mRenderer.setXAxisMax(X_MAX);
+            mRenderer.setXAxisMin(X_MIN);
         }
 
         if(EnableSerise2 && type == Sensor.TYPE_ORIENTATION)
@@ -821,7 +877,7 @@ public class TicXYChartBuilder extends Activity implements MobvoiApiClient.Conne
             Serise2StartIndex = x_index;
 
             xyseries4 = new XYSeries("yaw");
-            mDataset.addSeries(0, xyseries4);
+            mDataset.addSeries(3, xyseries4);
 
             //pitch
             datarenderer5 = new XYSeriesRenderer();
@@ -830,7 +886,7 @@ public class TicXYChartBuilder extends Activity implements MobvoiApiClient.Conne
             datarenderer5.setPointStyle(PointStyle.POINT);
             mRenderer.addSeriesRenderer(datarenderer5);
             xyseries5 = new XYSeries("pitch");
-            mDataset.addSeries(1, xyseries5);
+            mDataset.addSeries(4, xyseries5);
 
             // roll
             datarenderer6 = new XYSeriesRenderer();
@@ -840,13 +896,13 @@ public class TicXYChartBuilder extends Activity implements MobvoiApiClient.Conne
             mRenderer.addSeriesRenderer(datarenderer6);
 
             xyseries6 = new XYSeries("roll");
-            mDataset.addSeries(2, xyseries6);
+            mDataset.addSeries(5, xyseries6);
 
         } else {
             if (!EnableSerise2) {
-                mDataset.addSeries(0, xyseries4);
-                mDataset.addSeries(1, xyseries5);
-                mDataset.addSeries(2, xyseries6);
+                mDataset.addSeries(3, xyseries4);
+                mDataset.addSeries(4, xyseries5);
+                mDataset.addSeries(5, xyseries6);
                 EnableSerise2 = true;
             }
         }
