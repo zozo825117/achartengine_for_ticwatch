@@ -148,7 +148,7 @@ public class TicXYChartBuilder extends Activity implements MobvoiApiClient.Conne
     double Y_MAX = 3;
     float Y_min_buf = -3, Y_max_buf = 3;
 
-    boolean EnableSerise1 = false, EnableSerise2 = false, InitSerise1 = false, InitSerise2 = false;
+    boolean EnableSerise1 = false, EnableSerise4 = false, InitSerise1 = false, InitSerise2 = false;
     double Serise1StartIndex,Serise2StartIndex;
     private XYSeries xyseries1, xyseries2, xyseries3,xyseries4, xyseries5, xyseries6;//数据
     XYSeriesRenderer datarenderer1, datarenderer2, datarenderer3,datarenderer4, datarenderer5, datarenderer6;
@@ -160,10 +160,24 @@ public class TicXYChartBuilder extends Activity implements MobvoiApiClient.Conne
 
     String START_SENSOR_PATH = "/start-sensor";
     String START_ORIENTATION_PATH = "/EnableOrientation";
+    private static final String STOP_PATH = "/Stop";
+    private static final String RESTART_PATH = "/ReStart";
+    private static final String SENSOR_DATA_TYPE_ACC = "Accelerometer";
+    private static final String SENSOR_DATA_TYPE_ACC_ORI = "Acc+Ori";
+
     //toast
     private static Handler handler = new Handler(Looper.getMainLooper());
     private static Toast toast = null;
     private final static Object synObj = new Object();
+    final  int[] SeriesColor = {
+            Color.TRANSPARENT,
+            Color.GREEN,
+            Color.YELLOW,
+            Color.RED,
+            Color.CYAN,
+            Color.WHITE,
+            Color.MAGENTA
+    };
     /**
      * ATTENTION: This was auto-generated to implement the App Indexing API.
      * See https://g.co/AppIndexing/AndroidStudio for more information.
@@ -341,9 +355,7 @@ public class TicXYChartBuilder extends Activity implements MobvoiApiClient.Conne
 
         mEnableButton.setOnClickListener(new View.OnClickListener() {
             public void onClick(View v) {
-                if (D) {
-                    Log.i(TAG, "mEnableButton onClick");
-                }
+                if (D) Log.i(TAG, "mEnableButton onClick");
                 int x = 0;
 
                 try {
@@ -356,18 +368,45 @@ public class TicXYChartBuilder extends Activity implements MobvoiApiClient.Conne
                 // add a new data point to the current series
                 switch (x) {
                     case 1:
-                            enableAccWave();
-                            mSaveButton.setEnabled(false);
-                        break;
+                        if(EnableSerise1) {
+                            datarenderer1.setColor(SeriesColor[1]);
+                        }
                     case 2:
-                            enableOrientationWave();
-                            mSaveButton.setEnabled(false);
+                        if(EnableSerise1) {
+                            datarenderer2.setColor(SeriesColor[2]);
+                        }
+                    case 3:{
+                        if(EnableSerise1) {
+                            datarenderer3.setColor(SeriesColor[3]);
+                        }
+                        enableAccWave();
                         break;
+                    }
+                    case 4:{
+                        if(EnableSerise4) {
+                            datarenderer4.setColor(SeriesColor[4]);
+                        }
+                    }
+                    case 5:{
+                        if(EnableSerise4) {
+                            datarenderer5.setColor(SeriesColor[5]);
+                        }
+                    }
+                    case 6:{
+                        if(EnableSerise4) {
+                            datarenderer6.setColor(SeriesColor[6]);
+                        }
+                        if(EnableSerise1){
+                            enableOrientationWave();
+                        }
+                        break;
+                    }
                     default:
                         break;
                 }
 
                 mStopButton.setText("STOP");
+                mSaveButton.setEnabled(false);
 
                 //
                 mSeries.setText("");
@@ -393,14 +432,31 @@ public class TicXYChartBuilder extends Activity implements MobvoiApiClient.Conne
                 }
 
                 // add a new data point to the current series
-
                 switch (x) {
-                    case 1:
-                            disableAccWave();
+                    case 1:{
+                        datarenderer1.setColor(SeriesColor[0]);
                         break;
-                    case 2:
-                            disableOrientationWave();
+                    }
+                    case 2:{
+                        datarenderer2.setColor(SeriesColor[0]);
                         break;
+                    }
+                    case 3:{
+                        datarenderer3.setColor(SeriesColor[0]);
+                        break;
+                    }
+                    case 4:{
+                        datarenderer4.setColor(SeriesColor[0]);
+                        break;
+                    }
+                    case 5:{
+                        datarenderer5.setColor(SeriesColor[0]);
+                        break;
+                    }
+                    case 6:{
+                        datarenderer6.setColor(SeriesColor[0]);
+                        break;
+                    }
                     default:
                         break;
                 }
@@ -415,16 +471,16 @@ public class TicXYChartBuilder extends Activity implements MobvoiApiClient.Conne
             public void onClick(View v) {
                 Log.i(TAG, mStopButton.getText().toString());
                 if (mStopButton.getText().toString().equals("STOP")) {
-                    //stopTimer();
-
+                    SendMSG = STOP_PATH;
+                    Log.d(TAG, "StartWearableActivityTask SendMSG=" + SendMSG);
+                    new StartWearableActivityTask().execute();
                     mStopButton.setText("START");
                     mSaveButton.setEnabled(true);
                 } else if (mStopButton.getText().toString().equals("START")) {
-                    if (EnableSerise1) {
-
-                    }
-                    if (EnableSerise2) {
-
+                    if (EnableSerise1 | EnableSerise4) {
+                        SendMSG = RESTART_PATH;
+                        Log.d(TAG, "StartWearableActivityTask SendMSG=" + SendMSG);
+                        new StartWearableActivityTask().execute();
                     }
                     mStopButton.setText("STOP");
                     mSaveButton.setEnabled(false);
@@ -492,7 +548,7 @@ public class TicXYChartBuilder extends Activity implements MobvoiApiClient.Conne
         mYplusButton.setOnClickListener(new View.OnClickListener() {
             public void onClick(View v) {
                 double y_max, y_min , delta;
-                if (EnableSerise1 | EnableSerise2) {
+                if (EnableSerise1 | EnableSerise4) {
                     y_max = mRenderer.getYAxisMax();
                     y_min = mRenderer.getYAxisMin();
 
@@ -521,7 +577,7 @@ public class TicXYChartBuilder extends Activity implements MobvoiApiClient.Conne
         mYdecButton.setOnClickListener(new View.OnClickListener() {
             public void onClick(View v) {
                 double y_max, y_min , delta;
-                if (EnableSerise1 | EnableSerise2) {
+                if (EnableSerise1 | EnableSerise4) {
                     y_max = mRenderer.getYAxisMax();
                     y_min = mRenderer.getYAxisMin();
 
@@ -549,7 +605,7 @@ public class TicXYChartBuilder extends Activity implements MobvoiApiClient.Conne
         mXplusButton.setOnClickListener(new View.OnClickListener() {
             public void onClick(View v) {
                 double x_max, x_min,delta;
-                if (EnableSerise1 | EnableSerise2) {
+                if (EnableSerise1 | EnableSerise4) {
                     x_max = mRenderer.getXAxisMax();
                     x_min = mRenderer.getXAxisMin();
 
@@ -577,7 +633,7 @@ public class TicXYChartBuilder extends Activity implements MobvoiApiClient.Conne
         mXdecButton.setOnClickListener(new View.OnClickListener() {
             public void onClick(View v) {
                 double x_max, x_min,delta;
-                if (EnableSerise1 | EnableSerise2) {
+                if (EnableSerise1 | EnableSerise4) {
                     x_max = mRenderer.getXAxisMax();
                     x_min = mRenderer.getXAxisMin();
 
@@ -640,7 +696,7 @@ public class TicXYChartBuilder extends Activity implements MobvoiApiClient.Conne
             if (EnableSerise1) {
                 //sm.registerListener(myAccelerometerListener, sm.getDefaultSensor(Sensor.TYPE_LINEAR_ACCELERATION), SensorManager.SENSOR_DELAY_FASTEST);
             }
-            if (EnableSerise2) {
+            if (EnableSerise4) {
                 //sm.registerListener(myAccelerometerListener, sm.getDefaultSensor(Sensor.TYPE_ORIENTATION), SensorManager.SENSOR_DELAY_FASTEST);
             }
             mChartView.repaint();
@@ -661,11 +717,6 @@ public class TicXYChartBuilder extends Activity implements MobvoiApiClient.Conne
         mMobvoiApiClient.disconnect();
     }
 
-    @Override
-    protected void onDestroy() {
-        System.out.println("destory");
-        super.onDestroy();
-    }
 
     @Override
     public void onConnected(Bundle connectionHint) {
@@ -695,18 +746,47 @@ public class TicXYChartBuilder extends Activity implements MobvoiApiClient.Conne
 
     @Override
     public void onMessageReceived(MessageEvent event) {
-        if(D)Log.i(TAG, "onMessageReceived");
+        if(D)Log.i(TAG, "onMessageReceived = "+event.getPath());
+        switch (event.getPath()){
+            case SENSOR_DATA_TYPE_ACC:{
+                byte[] data = event.getData();
+                final String SensorMessage = new String(data);
+                final String[] xyz = SensorMessage.split(",");
+                mHandler.post(new Runnable() {
+                    @Override
+                    public void run() {
+                        Log.d(TAG,"Accelerometer x=" + "" + xyz[0] + "y=" + "" + xyz[1] + "z=" + "" + xyz[2]);
+                    }
+                });
+                waveUpdataRoutine(Sensor.TYPE_LINEAR_ACCELERATION,
+                        Float.valueOf(xyz[0]),
+                        Float.valueOf(xyz[1]),Float.valueOf(xyz[2]));
+                break;
+            }
+            case SENSOR_DATA_TYPE_ACC_ORI:{
+                byte[] data = event.getData();
+                final String SensorMessage = new String(data);
+                final String[] xyz = SensorMessage.split(",");
+                mHandler.post(new Runnable() {
+                    @Override
+                    public void run() {
+                        Log.d(TAG,"SENSOR_DATA_TYPE_ACC_ORI");
+                    }
+                });
+                waveUpdataRoutine(Sensor.TYPE_LINEAR_ACCELERATION,
+                        Float.valueOf(xyz[0]),
+                        Float.valueOf(xyz[1]),Float.valueOf(xyz[2]));
+                waveUpdataRoutine(Sensor.TYPE_ORIENTATION,
+                        Float.valueOf(xyz[3]),
+                        Float.valueOf(xyz[4]),Float.valueOf(xyz[5]));
+                break;
+            }
+            default:{
+                break;
+            }
+        }
         if (event.getPath().equals("Accelerometer")) {
-            byte[] data = event.getData();
-            final String SensorMessage = new String(data);
-            final String[] xyz = SensorMessage.split(",");
-            mHandler.post(new Runnable() {
-                @Override
-                public void run() {
-                    Log.d(TAG,"Accelerometer x=" + "" + xyz[0] + "y=" + "" + xyz[1] + "z=" + "" + xyz[2]);
-                }
-            });
-            waveUpdataRoutine(Sensor.TYPE_LINEAR_ACCELERATION, Float.valueOf(xyz[0]) ,Float.valueOf(xyz[1]),Float.valueOf(xyz[2]));
+
         }else if(event.getPath().equals("Orientation")){
             byte[] data = event.getData();
             final String SensorMessage = new String(data);
@@ -786,7 +866,7 @@ public class TicXYChartBuilder extends Activity implements MobvoiApiClient.Conne
             }
         }
 
-        if (EnableSerise2 && type == Sensor.TYPE_ORIENTATION) {
+        if (EnableSerise4 && type == Sensor.TYPE_ORIENTATION) {
             xyseries4.add(x_index, mx);
             xyseries5.add(x_index, my);
             xyseries6.add(x_index, mz);
@@ -798,20 +878,24 @@ public class TicXYChartBuilder extends Activity implements MobvoiApiClient.Conne
             mRenderer.setXAxisMax(X_MAX);
         }*/
         if (x_index  >= X_MAX) {
-            X_MAX += 300/4;//
-            X_MIN += 300/4;
+            X_MAX += 300/2;//
+            X_MIN += 300/2;
             mRenderer.setXAxisMax(X_MAX);
             mRenderer.setXAxisMin(X_MIN);
         }
 
-        if(EnableSerise2 && type == Sensor.TYPE_ORIENTATION)
-            x_index += 1;
-        else if(!EnableSerise2)
+        if(EnableSerise4 && type == Sensor.TYPE_ORIENTATION)
         {
             x_index += 1;
+            mChartView.postInvalidate();
+        }
+        else if(!EnableSerise4)
+        {
+            x_index += 1;
+            mChartView.postInvalidate();
         }
 
-        mChartView.postInvalidate();
+
     }
 
     private void enableAccWave() {
@@ -867,7 +951,7 @@ public class TicXYChartBuilder extends Activity implements MobvoiApiClient.Conne
     private void enableOrientationWave() {
         if (!InitSerise2) {
             InitSerise2 = true;
-            EnableSerise2 = true;
+            EnableSerise4 = true;
             // yaw
             datarenderer4 = new XYSeriesRenderer();
             datarenderer4.setDisplayChartValues(false);
@@ -899,21 +983,13 @@ public class TicXYChartBuilder extends Activity implements MobvoiApiClient.Conne
             mDataset.addSeries(5, xyseries6);
 
         } else {
-            if (!EnableSerise2) {
+            if (!EnableSerise4) {
                 mDataset.addSeries(3, xyseries4);
                 mDataset.addSeries(4, xyseries5);
                 mDataset.addSeries(5, xyseries6);
-                EnableSerise2 = true;
+                EnableSerise4 = true;
             }
         }
-
-        /*
-        * 最常用的一个方法 注册事件
-        * 参数1 ：SensorEventListener监听器
-        * 参数2 ：Sensor 一个服务可能有多个Sensor实现，此处调用getDefaultSensor获取默认的Sensor
-        * 参数3 ：模式 可选数据变化的刷新频率
-        * */
-        //sm.registerListener(myAccelerometerListener, sm.getDefaultSensor(Sensor.TYPE_ORIENTATION), SensorManager.SENSOR_DELAY_FASTEST);
         SendMSG = START_ORIENTATION_PATH;
         Log.d(TAG, "StartWearableActivityTask SendMSG=" + SendMSG);
         new StartWearableActivityTask().execute();
@@ -927,8 +1003,8 @@ public class TicXYChartBuilder extends Activity implements MobvoiApiClient.Conne
         }
     }
     private void disableOrientationWave(){
-        if (EnableSerise2) {
-            EnableSerise2 = false;
+        if (EnableSerise4) {
+            EnableSerise4 = false;
             mDataset.removeSeries(xyseries4);
             mDataset.removeSeries(xyseries5);
             mDataset.removeSeries(xyseries6);
@@ -1027,6 +1103,10 @@ public class TicXYChartBuilder extends Activity implements MobvoiApiClient.Conne
     };
 */
 
-
+    @Override
+    protected void onDestroy() {
+        System.out.println("destory");
+        super.onDestroy();
+    }
 
 }

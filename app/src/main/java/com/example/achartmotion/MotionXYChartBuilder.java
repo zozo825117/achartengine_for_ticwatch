@@ -121,6 +121,7 @@ public class MotionXYChartBuilder extends Activity {
     boolean D = true;
     boolean M = true;
     boolean UseOrientation = true;
+
     private static final String TAG = "MotionXYChartBuilder";
 
     public static final int EXTERNAL_STORAGE_REQ_CODE = 10;
@@ -132,7 +133,7 @@ public class MotionXYChartBuilder extends Activity {
     double Y_MAX = 3;
     float Y_min_buf = -3, Y_max_buf = 3;
 
-    boolean EnableSerise1 = false, EnableSerise2 = false, InitSerise1 = false, InitSerise2 = false;
+    boolean EnableSerise1 = false, EnableSerise4 = false, InitSerise1 = false, InitSerise2 = false;
     double Serise1StartIndex,Serise2StartIndex;
     private XYSeries xyseries1, xyseries2, xyseries3,xyseries4, xyseries5, xyseries6;//数据
     XYSeriesRenderer datarenderer1, datarenderer2, datarenderer3,datarenderer4, datarenderer5, datarenderer6;
@@ -147,6 +148,16 @@ public class MotionXYChartBuilder extends Activity {
     private float[] magneticFieldValues = new float[3];
 
      final int SensorDelay = SensorManager.SENSOR_DELAY_UI;
+
+    final  int[] SeriesColor = {
+            Color.TRANSPARENT,
+            Color.GREEN,
+            Color.YELLOW,
+            Color.RED,
+            Color.CYAN,
+            Color.WHITE,
+            Color.MAGENTA
+    };
     /**
      * ATTENTION: This was auto-generated to implement the App Indexing API.
      * See https://g.co/AppIndexing/AndroidStudio for more information.
@@ -316,11 +327,8 @@ public class MotionXYChartBuilder extends Activity {
 
         mEnableButton.setOnClickListener(new View.OnClickListener() {
             public void onClick(View v) {
-                if (D) {
-                    Log.i(TAG, "mEnableButton onClick");
-                }
+                if (D) Log.i(TAG, "mEnableButton onClick");
                 int x = 0;
-
                 try {
                     x = Integer.parseInt(mSeries.getText().toString());
                 } catch (NumberFormatException e) {
@@ -331,18 +339,55 @@ public class MotionXYChartBuilder extends Activity {
                 // add a new data point to the current series
                 switch (x) {
                     case 1:
+                        if(EnableSerise1) {
+                            datarenderer1.setColor(SeriesColor[1]);
+                        }else {
                             enableAccWave();
-                            mSaveButton.setEnabled(false);
+                        }
                         break;
                     case 2:
-                            enableOrientationWave();
-                            mSaveButton.setEnabled(false);
+                        if(EnableSerise1) {
+                            datarenderer2.setColor(SeriesColor[2]);
+                        }else {
+                            enableAccWave();
+                        }
                         break;
+                    case 3:{
+                        if(EnableSerise1) {
+                            datarenderer3.setColor(SeriesColor[3]);
+                        }else {
+                            enableAccWave();
+                        }
+                        break;
+                    }
+                    case 4:{
+                        if(EnableSerise4) {
+                            datarenderer4.setColor(SeriesColor[4]);
+                        }else {
+                            if(EnableSerise1)enableOrientationWave();
+                        }
+                    }
+                    case 5:{
+                        if(EnableSerise4) {
+                            datarenderer5.setColor(SeriesColor[5]);
+                        }else {
+                            if(EnableSerise1)enableOrientationWave();
+                        }
+                    }
+                    case 6:{
+                        if(EnableSerise4) {
+                            datarenderer6.setColor(SeriesColor[6]);
+                        }else {
+                            if(EnableSerise1)enableOrientationWave();
+                        }
+                        break;
+                    }
                     default:
                         break;
                 }
 
                 mStopButton.setText("STOP");
+                mSaveButton.setEnabled(false);
 
                 //
                 mSeries.setText("");
@@ -368,14 +413,31 @@ public class MotionXYChartBuilder extends Activity {
                 }
 
                 // add a new data point to the current series
-
                 switch (x) {
-                    case 1:
-                            disableAccWave();
+                    case 1:{
+                        datarenderer1.setColor(SeriesColor[0]);
                         break;
-                    case 2:
-                            disableOrientationWave();
+                    }
+                    case 2:{
+                        datarenderer2.setColor(SeriesColor[0]);
                         break;
+                    }
+                    case 3:{
+                        datarenderer3.setColor(SeriesColor[0]);
+                        break;
+                    }
+                    case 4:{
+                        datarenderer4.setColor(SeriesColor[0]);
+                        break;
+                    }
+                    case 5:{
+                        datarenderer5.setColor(SeriesColor[0]);
+                        break;
+                    }
+                    case 6:{
+                        datarenderer6.setColor(SeriesColor[0]);
+                        break;
+                    }
                     default:
                         break;
                 }
@@ -398,7 +460,7 @@ public class MotionXYChartBuilder extends Activity {
                     if (EnableSerise1) {
                         sm.registerListener(myAccelerometerListener, sm.getDefaultSensor(Sensor.TYPE_LINEAR_ACCELERATION), SensorDelay);
                     }
-                    if (EnableSerise2) {
+                    if (EnableSerise4) {
                         if(!UseOrientation)
                             sm.registerListener(myAccelerometerListener, sm.getDefaultSensor(Sensor.TYPE_ORIENTATION), SensorDelay);
                         else
@@ -476,7 +538,7 @@ public class MotionXYChartBuilder extends Activity {
         mYplusButton.setOnClickListener(new View.OnClickListener() {
             public void onClick(View v) {
                 double y_max, y_min , delta;
-                if (EnableSerise1 | EnableSerise2) {
+                if (EnableSerise1 | EnableSerise4) {
                     y_max = mRenderer.getYAxisMax();
                     y_min = mRenderer.getYAxisMin();
 
@@ -505,7 +567,7 @@ public class MotionXYChartBuilder extends Activity {
         mYdecButton.setOnClickListener(new View.OnClickListener() {
             public void onClick(View v) {
                 double y_max, y_min , delta;
-                if (EnableSerise1 | EnableSerise2) {
+                if (EnableSerise1 | EnableSerise4) {
                     y_max = mRenderer.getYAxisMax();
                     y_min = mRenderer.getYAxisMin();
 
@@ -533,7 +595,7 @@ public class MotionXYChartBuilder extends Activity {
         mXplusButton.setOnClickListener(new View.OnClickListener() {
             public void onClick(View v) {
                 double x_max, x_min,delta;
-                if (EnableSerise1 | EnableSerise2) {
+                if (EnableSerise1 | EnableSerise4) {
                     x_max = mRenderer.getXAxisMax();
                     x_min = mRenderer.getXAxisMin();
 
@@ -561,7 +623,7 @@ public class MotionXYChartBuilder extends Activity {
         mXdecButton.setOnClickListener(new View.OnClickListener() {
             public void onClick(View v) {
                 double x_max, x_min,delta;
-                if (EnableSerise1 | EnableSerise2) {
+                if (EnableSerise1 | EnableSerise4) {
                     x_max = mRenderer.getXAxisMax();
                     x_min = mRenderer.getXAxisMin();
 
@@ -624,7 +686,7 @@ public class MotionXYChartBuilder extends Activity {
             if (EnableSerise1) {
                 sm.registerListener(myAccelerometerListener, sm.getDefaultSensor(Sensor.TYPE_LINEAR_ACCELERATION), SensorDelay);
             }
-            if (EnableSerise2) {
+            if (EnableSerise4) {
                 if(!UseOrientation)
                     sm.registerListener(myAccelerometerListener, sm.getDefaultSensor(Sensor.TYPE_ORIENTATION), SensorDelay);
                 else
@@ -664,7 +726,7 @@ public class MotionXYChartBuilder extends Activity {
             }
         }
 
-        if (EnableSerise2 && type == Sensor.TYPE_ORIENTATION) {
+        if (EnableSerise4 && type == Sensor.TYPE_ORIENTATION) {
             xyseries4.add(x_index, mx);
             xyseries5.add(x_index, my);
             xyseries6.add(x_index, mz);
@@ -682,17 +744,21 @@ public class MotionXYChartBuilder extends Activity {
             mRenderer.setXAxisMin(X_MIN);
         }
 
-        if(EnableSerise2 && type == Sensor.TYPE_ORIENTATION)
-            x_index += 1;
-        else if(!EnableSerise2)
+        if(EnableSerise4 && type == Sensor.TYPE_ORIENTATION)
         {
             x_index += 1;
+            mChartView.postInvalidate();
+        }
+        else if(!EnableSerise4)
+        {
+            x_index += 1;
+            mChartView.postInvalidate();
         }
 
         //WaveUpdataThread tr = new WaveUpdataThread();
         //Thread thread = new Thread(tr);
         //thread.start();
-        mChartView.postInvalidate();
+
     }
     class WaveUpdataThread implements Runnable {
         public void run() {
@@ -715,7 +781,7 @@ public class MotionXYChartBuilder extends Activity {
             // acc_x
             datarenderer1 = new XYSeriesRenderer();
             datarenderer1.setDisplayChartValues(false);
-            datarenderer1.setColor(Color.GREEN);
+            datarenderer1.setColor(SeriesColor[1]);
             datarenderer1.setPointStyle(PointStyle.POINT);
             mRenderer.addSeriesRenderer(datarenderer1);
             Serise1StartIndex = x_index;
@@ -726,7 +792,7 @@ public class MotionXYChartBuilder extends Activity {
             //acc y
             datarenderer2 = new XYSeriesRenderer();
             datarenderer2.setDisplayChartValues(false);
-            datarenderer2.setColor(Color.YELLOW);
+            datarenderer2.setColor(SeriesColor[2]);
             datarenderer2.setPointStyle(PointStyle.POINT);
             mRenderer.addSeriesRenderer(datarenderer2);
 
@@ -736,7 +802,7 @@ public class MotionXYChartBuilder extends Activity {
             //acc z
             datarenderer3 = new XYSeriesRenderer();
             datarenderer3.setDisplayChartValues(false);
-            datarenderer3.setColor(Color.RED);
+            datarenderer3.setColor(SeriesColor[3]);
             datarenderer3.setPointStyle(PointStyle.POINT);
             mRenderer.addSeriesRenderer(datarenderer3);
 
@@ -744,12 +810,7 @@ public class MotionXYChartBuilder extends Activity {
             mDataset.addSeries(2, xyseries3);
 
         } else {
-            if (!EnableSerise1) {
-                mDataset.addSeries(0, xyseries1);
-                mDataset.addSeries(1, xyseries2);
-                mDataset.addSeries(2, xyseries3);
-                EnableSerise1 = true;
-            }
+
         }
 
         /*
@@ -763,11 +824,11 @@ public class MotionXYChartBuilder extends Activity {
     private void enableOrientationWave() {
         if (!InitSerise2) {
             InitSerise2 = true;
-            EnableSerise2 = true;
+            EnableSerise4 = true;
             // yaw
             datarenderer4 = new XYSeriesRenderer();
             datarenderer4.setDisplayChartValues(false);
-            datarenderer4.setColor(Color.CYAN);
+            datarenderer4.setColor(SeriesColor[4]);
             datarenderer4.setPointStyle(PointStyle.POINT);
             mRenderer.addSeriesRenderer(datarenderer4);
             Serise2StartIndex = x_index;
@@ -778,7 +839,7 @@ public class MotionXYChartBuilder extends Activity {
             //pitch
             datarenderer5 = new XYSeriesRenderer();
             datarenderer5.setDisplayChartValues(false);
-            datarenderer5.setColor(Color.WHITE);
+            datarenderer5.setColor(SeriesColor[5]);
             datarenderer5.setPointStyle(PointStyle.POINT);
             mRenderer.addSeriesRenderer(datarenderer5);
             xyseries5 = new XYSeries("pitch");
@@ -787,7 +848,7 @@ public class MotionXYChartBuilder extends Activity {
             // roll
             datarenderer6 = new XYSeriesRenderer();
             datarenderer6.setDisplayChartValues(false);
-            datarenderer6.setColor(Color.MAGENTA);
+            datarenderer6.setColor(SeriesColor[6]);
             datarenderer6.setPointStyle(PointStyle.POINT);
             mRenderer.addSeriesRenderer(datarenderer6);
 
@@ -795,11 +856,11 @@ public class MotionXYChartBuilder extends Activity {
             mDataset.addSeries(5, xyseries6);
 
         } else {
-            if (!EnableSerise2) {
+            if (!EnableSerise4) {
                 mDataset.addSeries(3, xyseries4);
                 mDataset.addSeries(4, xyseries5);
                 mDataset.addSeries(5, xyseries6);
-                EnableSerise2 = true;
+                EnableSerise4 = true;
             }
         }
 
@@ -821,18 +882,16 @@ public class MotionXYChartBuilder extends Activity {
     }
     private void disableAccWave(){
         if (EnableSerise1) {
-            EnableSerise1 = false;
-            mDataset.removeSeries(xyseries1);
-            mDataset.removeSeries(xyseries2);
-            mDataset.removeSeries(xyseries3);
+            datarenderer1.setColor(SeriesColor[0]);
+            datarenderer2.setColor(SeriesColor[0]);
+            datarenderer3.setColor(SeriesColor[0]);
         }
     }
     private void disableOrientationWave(){
-        if (EnableSerise2) {
-            EnableSerise2 = false;
-            mDataset.removeSeries(xyseries4);
-            mDataset.removeSeries(xyseries5);
-            mDataset.removeSeries(xyseries6);
+        if (EnableSerise4) {
+            datarenderer4.setColor(SeriesColor[0]);
+            datarenderer5.setColor(SeriesColor[0]);
+            datarenderer6.setColor(SeriesColor[0]);
         }
     }
     private String saveStringFormat(XYSeries series,int index){
@@ -891,7 +950,7 @@ public class MotionXYChartBuilder extends Activity {
                 Log.i(TAG, "\n Laccel_x " + X_lateral);
                 Log.i(TAG, "\n Laccel_y " + Y_longitudinal);
                 Log.i(TAG, "\n Laccel_z " + Z_vertical);*/
-                if(M)Log.d(TAG, "TYPE_LINEAR_ACCELERATION");
+                //if(M)Log.d(TAG, "TYPE_LINEAR_ACCELERATION");
                 waveUpdataRoutine(Sensor.TYPE_LINEAR_ACCELERATION,sensorEvent.values[0], sensorEvent.values[1], sensorEvent.values[2]);
             }
 
@@ -907,7 +966,7 @@ public class MotionXYChartBuilder extends Activity {
                 Log.i(TAG, "\n heading " + X_heading);
                 Log.i(TAG, "\n pitch " + Y_pitch);
                 Log.i(TAG, "\n roll " + Z_roll);*/
-                if(M)Log.d(TAG, "TYPE_ORIENTATION");
+                //if(M)Log.d(TAG, "TYPE_ORIENTATION");
                 waveUpdataRoutine(Sensor.TYPE_ORIENTATION,sensorEvent.values[0], sensorEvent.values[1], sensorEvent.values[2]);
             }
             if (sensorEvent.sensor.getType() == Sensor.TYPE_ACCELEROMETER) {
