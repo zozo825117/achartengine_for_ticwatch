@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.achartengine.chartdemo.demo.chart;
+package com.example.achartmotion;
 
 import org.achartengine.ChartFactory;
 import org.achartengine.GraphicalView;
@@ -24,6 +24,7 @@ import org.achartengine.model.XYMultipleSeriesDataset;
 import org.achartengine.model.XYSeries;
 import org.achartengine.renderer.XYMultipleSeriesRenderer;
 import org.achartengine.renderer.XYSeriesRenderer;
+import org.achartengine.chartdemo.demo.chart.ZozoXYChartBuilder;
 
 import android.Manifest;
 import android.app.Activity;
@@ -35,8 +36,9 @@ import android.hardware.Sensor;
 import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
-import android.net.Uri;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
 import android.util.Log;
@@ -47,14 +49,11 @@ import android.widget.EditText;
 import android.widget.LinearLayout;
 import android.widget.Toast;
 
-import com.example.achartmotion.FileStoreTools;
-import com.google.android.gms.appindexing.Action;
 import com.google.android.gms.appindexing.AppIndex;
 import com.google.android.gms.common.api.GoogleApiClient;
 
 import java.io.File;
-import java.util.Timer;
-import java.util.TimerTask;
+
 
 public class MotionXYChartBuilder extends Activity {
     /**
@@ -68,21 +67,21 @@ public class MotionXYChartBuilder extends Activity {
     /**
      * The most recently added series.
      */
-    private XYSeries mCurrentSeries;
+    //private XYSeries mCurrentSeries;
     /**
      * The most recently created renderer, customizing the current series.
      */
-    private XYSeriesRenderer mCurrentRenderer;
+    //private XYSeriesRenderer mCurrentRenderer;
 /*  *//** Button for creating a new series of data. *//*
-  private Button mNewSeries;*/
+  //private Button mNewSeries;*/
     /**
      * Button for adding entered data to the current series.
      */
-    private Button mEnableButton;
+    Button mEnableButton;
     /**
      * Button for adding entered data to the current series.
      */
-    private Button mDisableButton;
+    Button mDisableButton;
     /**
      * Button for adding entered data to the current series.
      */
@@ -90,23 +89,23 @@ public class MotionXYChartBuilder extends Activity {
     /**
      * Button for adding entered data to the current series.
      */
-    private Button mYplusButton;
+    Button mYplusButton;
     /**
      * Button for adding entered data to the current series.
      */
-    private Button mYdecButton;
+    Button mYdecButton;
     /**
      * Button for adding entered data to the current series.
      */
-    private Button mXplusButton;
+    Button mXplusButton;
     /**
      * Button for adding entered data to the current series.
      */
-    private Button mXdecButton;
+    Button mXdecButton;
     /**
      * Button for adding entered data to the current series.
      */
-    private Button mClearButton;
+    //private Button mClearButton;
     /**
      * Button for adding entered data to the current series.
      */
@@ -119,33 +118,46 @@ public class MotionXYChartBuilder extends Activity {
      */
     private GraphicalView mChartView;
 
-    final boolean D = true;
+    boolean D = true;
+    boolean M = true;
+    boolean UseOrientation = true;
+
     private static final String TAG = "MotionXYChartBuilder";
 
     public static final int EXTERNAL_STORAGE_REQ_CODE = 10;
 
-    int ptr = 0;
     double x_index = 0;
     double X_MIN = 0;
-    double X_MAX = 100;
+    double X_MAX = 300;
     double Y_MIN = -3;
     double Y_MAX = 3;
     float Y_min_buf = -3, Y_max_buf = 3;
 
-    boolean EnableSerise1 = false, EnableSerise2 = false, EnableSerise3 = false, InitSerise1 = false, InitSerise2 = false, InitSerise3 = false;
-    double Serise1StartIndex,Serise2StartIndex,Serise3StartIndex;
-    ;
-    private XYSeries xyseries1, xyseries2, xyseries3;//数据
-    private XYSeriesRenderer datarenderer1, datarenderer2, datarenderer3;
-    private Timer mTimer;
-    private TimerTask mTask;
-
+    boolean EnableSerise1 = false, EnableSerise4 = false, InitSerise1 = false, InitSerise2 = false;
+    double Serise1StartIndex,Serise2StartIndex;
+    private XYSeries xyseries1, xyseries2, xyseries3,xyseries4, xyseries5, xyseries6;//数据
+    XYSeriesRenderer datarenderer1, datarenderer2, datarenderer3,datarenderer4, datarenderer5, datarenderer6;
     //motion
     private SensorManager sm;
-    int AsensorType;
-    int MsensorType;
-    int GsensorType;
-    int LsensorType;
+    //toast
+    private static Handler handler = new Handler(Looper.getMainLooper());
+    private static Toast toast = null;
+    private final static Object synObj = new Object();
+
+    private float[] accelerometerValues = new float[3];
+    private float[] magneticFieldValues = new float[3];
+
+     final int SensorDelay = SensorManager.SENSOR_DELAY_UI;
+
+    final  int[] SeriesColor = {
+            Color.TRANSPARENT,
+            Color.GREEN,
+            Color.YELLOW,
+            Color.RED,
+            Color.CYAN,
+            Color.WHITE,
+            Color.MAGENTA
+    };
     /**
      * ATTENTION: This was auto-generated to implement the App Indexing API.
      * See https://g.co/AppIndexing/AndroidStudio for more information.
@@ -211,6 +223,36 @@ public class MotionXYChartBuilder extends Activity {
         }
     }
 
+    public static void showMessage(final Context act, final String msg) {
+        showMessage(act, msg, Toast.LENGTH_SHORT);
+    }
+
+    public static void showMessage(final Context act, final String msg,
+                                   final int len) {
+        new Thread(new Runnable() {
+            public void run() {
+                handler.post(new Runnable() {
+                    @Override
+                    public void run() {
+                        synchronized (synObj)
+                        {
+                            if (toast != null) {
+                                toast.cancel();
+                                //toast.setText(msg);
+                                //toast.setDuration(len);
+                                toast = Toast.makeText(act, msg, len);
+                            } else {
+                                toast = Toast.makeText(act, msg, len);
+                            }
+                            toast.show();
+                        }
+                    }
+                });
+            }
+        }).start();
+    }
+
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         if (D) {
@@ -269,6 +311,9 @@ public class MotionXYChartBuilder extends Activity {
         // enable the chart click events
         mRenderer.setClickEnabled(true);
         mRenderer.setSelectableBuffer(10);
+
+        mRenderer.setZoomInLimitX(100);
+        mRenderer.setZoomInLimitY(5);
         //mRenderer.setZoomEnabled(true);
         //mRenderer.setPanEnabled(true);
 
@@ -279,31 +324,11 @@ public class MotionXYChartBuilder extends Activity {
 
         //创建一个SensorManager来获取系统的传感器服务
         sm = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
-        //选取加速度感应器
-        //AsensorType = Sensor.TYPE_ACCELEROMETER;
-        //MsensorType = Sensor.TYPE_ORIENTATION;
-        //GsensorType = Sensor.TYPE_GRAVITY;
-        LsensorType = Sensor.TYPE_LINEAR_ACCELERATION;
-
-    /*
-     * 最常用的一个方法 注册事件
-     * 参数1 ：SensorEventListener监听器
-     * 参数2 ：Sensor 一个服务可能有多个Sensor实现，此处调用getDefaultSensor获取默认的Sensor
-     * 参数3 ：模式 可选数据变化的刷新频率
-     * */
-//        sm.registerListener(myAccelerometerListener, sm.getDefaultSensor(AsensorType), SensorManager.SENSOR_DELAY_NORMAL);
-//        sm.registerListener(myAccelerometerListener, sm.getDefaultSensor(MsensorType), SensorManager.SENSOR_DELAY_NORMAL);
-//        sm.registerListener(myAccelerometerListener, sm.getDefaultSensor(GsensorType), SensorManager.SENSOR_DELAY_NORMAL);
-//        sm.registerListener(myAccelerometerListener, sm.getDefaultSensor(LsensorType), SensorManager.SENSOR_DELAY_NORMAL);
-
 
         mEnableButton.setOnClickListener(new View.OnClickListener() {
             public void onClick(View v) {
-                if (D) {
-                    Log.i(TAG, "mEnableButton onClick");
-                }
+                if (D) Log.i(TAG, "mEnableButton onClick");
                 int x = 0;
-
                 try {
                     x = Integer.parseInt(mSeries.getText().toString());
                 } catch (NumberFormatException e) {
@@ -314,78 +339,55 @@ public class MotionXYChartBuilder extends Activity {
                 // add a new data point to the current series
                 switch (x) {
                     case 1:
-                        //Log.i(TAG, "getSeries" + mDataset.getSeries());
-                        if (!InitSerise1) {
-                            InitSerise1 = true;
-                            EnableSerise1 = true;
-                            datarenderer1 = new XYSeriesRenderer();
-                            datarenderer1.setDisplayChartValues(false);
-                            datarenderer1.setColor(Color.GREEN);
-                            datarenderer1.setPointStyle(PointStyle.POINT);
-                            mRenderer.addSeriesRenderer(datarenderer1);
-                            Serise1StartIndex = x_index;
-
-                            xyseries1 = new XYSeries("lacc_x");
-                            mDataset.addSeries(0, xyseries1);
-                        } else {
-                            if (!EnableSerise1) {
-                                mDataset.addSeries(0, xyseries1);
-                                EnableSerise1 = true;
-                            }
+                        if(EnableSerise1) {
+                            datarenderer1.setColor(SeriesColor[1]);
+                        }else {
+                            enableAccWave();
                         }
                         break;
                     case 2:
-                        //Log.i(TAG, "getSeries" + mDataset.getSeries().toString());
-                        if (!InitSerise2) {
-                            InitSerise2 = true;
-                            EnableSerise2 = true;
-                            datarenderer2 = new XYSeriesRenderer();
-                            datarenderer2.setDisplayChartValues(false);
-                            datarenderer2.setColor(Color.YELLOW);
-                            datarenderer2.setPointStyle(PointStyle.POINT);
-                            mRenderer.addSeriesRenderer(datarenderer2);
-                            Serise2StartIndex = x_index;
-
-                            xyseries2 = new XYSeries("lacc_y");
-                            mDataset.addSeries(1, xyseries2);
-
-                        } else {
-                            if (!EnableSerise2) {
-                                mDataset.addSeries(1, xyseries2);
-                                EnableSerise2 = true;
-                            }
+                        if(EnableSerise1) {
+                            datarenderer2.setColor(SeriesColor[2]);
+                        }else {
+                            enableAccWave();
                         }
                         break;
-                    case 3:
-                        //Log.i(TAG, "getSeries" + mDataset.getSeries());
-                        if (!InitSerise3) {
-                            InitSerise3 = true;
-                            EnableSerise3 = true;
-                            datarenderer3 = new XYSeriesRenderer();
-                            datarenderer3.setDisplayChartValues(false);
-                            datarenderer3.setColor(Color.RED);
-                            datarenderer3.setPointStyle(PointStyle.POINT);
-                            mRenderer.addSeriesRenderer(datarenderer3);
-                            Serise3StartIndex = x_index;
-
-                            xyseries3 = new XYSeries("lacc_z");
-                            mDataset.addSeries(2, xyseries3);
-
-                        } else {
-                            if (!EnableSerise3) {
-                                mDataset.addSeries(2, xyseries3);
-                                EnableSerise3 = true;
-                            }
+                    case 3:{
+                        if(EnableSerise1) {
+                            datarenderer3.setColor(SeriesColor[3]);
+                        }else {
+                            enableAccWave();
                         }
                         break;
+                    }
+                    case 4:{
+                        if(EnableSerise4) {
+                            datarenderer4.setColor(SeriesColor[4]);
+                        }else {
+                            if(EnableSerise1)enableOrientationWave();
+                        }
+                    }
+                    case 5:{
+                        if(EnableSerise4) {
+                            datarenderer5.setColor(SeriesColor[5]);
+                        }else {
+                            if(EnableSerise1)enableOrientationWave();
+                        }
+                    }
+                    case 6:{
+                        if(EnableSerise4) {
+                            datarenderer6.setColor(SeriesColor[6]);
+                        }else {
+                            if(EnableSerise1)enableOrientationWave();
+                        }
+                        break;
+                    }
                     default:
                         break;
                 }
 
                 mStopButton.setText("STOP");
-
-/*            // time
-            startTimer();*/
+                mSaveButton.setEnabled(false);
 
                 //
                 mSeries.setText("");
@@ -393,13 +395,6 @@ public class MotionXYChartBuilder extends Activity {
                 // repaint the chart such as the newly added point to be visible
                 mChartView.repaint();
 
-            /*
-             * 最常用的一个方法 注册事件
-             * 参数1 ：SensorEventListener监听器
-             * 参数2 ：Sensor 一个服务可能有多个Sensor实现，此处调用getDefaultSensor获取默认的Sensor
-             * 参数3 ：模式 可选数据变化的刷新频率
-             * */
-                sm.registerListener(myAccelerometerListener, sm.getDefaultSensor(Sensor.TYPE_LINEAR_ACCELERATION), SensorManager.SENSOR_DELAY_FASTEST);
             }
         });
 
@@ -418,26 +413,31 @@ public class MotionXYChartBuilder extends Activity {
                 }
 
                 // add a new data point to the current series
-
                 switch (x) {
-                    case 1:
-                        if (EnableSerise1) {
-                            EnableSerise1 = false;
-                            mDataset.removeSeries(xyseries1);
-                        }
+                    case 1:{
+                        datarenderer1.setColor(SeriesColor[0]);
                         break;
-                    case 2:
-                        if (EnableSerise2) {
-                            EnableSerise2 = false;
-                            mDataset.removeSeries(xyseries2);
-                        }
+                    }
+                    case 2:{
+                        datarenderer2.setColor(SeriesColor[0]);
                         break;
-                    case 3:
-                        if (EnableSerise3) {
-                            EnableSerise3 = false;
-                            mDataset.removeSeries(xyseries3);
-                        }
+                    }
+                    case 3:{
+                        datarenderer3.setColor(SeriesColor[0]);
                         break;
+                    }
+                    case 4:{
+                        datarenderer4.setColor(SeriesColor[0]);
+                        break;
+                    }
+                    case 5:{
+                        datarenderer5.setColor(SeriesColor[0]);
+                        break;
+                    }
+                    case 6:{
+                        datarenderer6.setColor(SeriesColor[0]);
+                        break;
+                    }
                     default:
                         break;
                 }
@@ -455,29 +455,28 @@ public class MotionXYChartBuilder extends Activity {
                     //stopTimer();
                     sm.unregisterListener(myAccelerometerListener);
                     mStopButton.setText("START");
+                    mSaveButton.setEnabled(true);
                 } else if (mStopButton.getText().toString().equals("START")) {
-                    if (EnableSerise1 | EnableSerise2 | EnableSerise3) {
-                        sm.registerListener(myAccelerometerListener, sm.getDefaultSensor(Sensor.TYPE_LINEAR_ACCELERATION), SensorManager.SENSOR_DELAY_FASTEST);
+                    if (EnableSerise1) {
+                        sm.registerListener(myAccelerometerListener, sm.getDefaultSensor(Sensor.TYPE_LINEAR_ACCELERATION), SensorDelay);
+                    }
+                    if (EnableSerise4) {
+                        if(!UseOrientation)
+                            sm.registerListener(myAccelerometerListener, sm.getDefaultSensor(Sensor.TYPE_ORIENTATION), SensorDelay);
+                        else
+                        {
+                            sm.registerListener(myAccelerometerListener, sm.getDefaultSensor(Sensor.TYPE_ACCELEROMETER), SensorDelay);
+                            sm.registerListener(myAccelerometerListener, sm.getDefaultSensor(Sensor.TYPE_MAGNETIC_FIELD), SensorDelay);
+                            magneticFieldValues = null;
+                            accelerometerValues = null;
+                        }
                     }
                     mStopButton.setText("STOP");
+                    mSaveButton.setEnabled(false);
                 }
             }
         });
 
-/*      mClearButton.setOnClickListener(new View.OnClickListener() {
-          public void onClick(View v) {
-              //if(mStopButton.getText().toString().equals("STOP"))
-              {
-                  sm.unregisterListener(myAccelerometerListener);
-                  mStopButton.setText("START");
-              }
-              if(mDataset != null)
-              {
-                  mDataset.clear();
-                  mChartView.repaint();
-              }
-          }
-      });*/
         mSaveButton.setOnClickListener(new View.OnClickListener() {
             public void onClick(View v) {
                 //if(mStopButton.getText().toString().equals("STOP"))
@@ -498,33 +497,23 @@ public class MotionXYChartBuilder extends Activity {
                     if(D)Log.i(TAG, "file full = " + file + "file path=" + file.getAbsolutePath());
 
                     //x_index
-                    String str_buf, save_str;
+                    String save_str;
                     for (double i = 0, j = 0; i < x_index; i++) {
                         double y;
 
-                        str_buf = "";
                         save_str = "";
 
                         if(i > Serise1StartIndex){
-                            y = xyseries1.getY((int)i);
-                            str_buf = "" + y;
-                            str_buf = ZozoXYChartBuilder.formatStr(str_buf, 7) + ", ";
-                            if(D)Log.i(TAG, "xyseries1 str=" + str_buf );
-                            save_str = str_buf;
+                            save_str = saveStringFormat(xyseries1 , (int)i);
+                            save_str = save_str + saveStringFormat(xyseries2 , (int)(i));
+                            save_str = save_str + saveStringFormat(xyseries3 , (int)(i));
+
                         }
-                        if(i > Serise2StartIndex){
-                            y = xyseries2.getY((int)(i-Serise2StartIndex));
-                            str_buf = "" + y;
-                            str_buf = ZozoXYChartBuilder.formatStr(str_buf, 7) + ", ";
-                            if(D)Log.i(TAG, "xyseries2 str=" + str_buf );
-                            save_str = save_str + str_buf;
-                        }
-                        if(i > Serise3StartIndex){
-                            y = xyseries3.getY((int)(i-Serise3StartIndex));
-                            str_buf = "" + y;
-                            str_buf = ZozoXYChartBuilder.formatStr(str_buf, 7) + ", ";
-                            if(D)Log.i(TAG, "xyseries3 str=" + str_buf );
-                            save_str = save_str + str_buf;
+                        if(i > Serise2StartIndex)
+                        {
+                            save_str = save_str + saveStringFormat(xyseries4 , (int)(i-Serise2StartIndex));
+                            save_str = save_str + saveStringFormat(xyseries5 , (int)(i-Serise2StartIndex));
+                            save_str = save_str + saveStringFormat(xyseries6 , (int)(i-Serise2StartIndex));
                         }
 
                         if(D)Log.i(TAG, "save str="+ save_str);
@@ -539,118 +528,122 @@ public class MotionXYChartBuilder extends Activity {
                     xyseries1.clear();
                     xyseries2.clear();
                     xyseries3.clear();
+                    xyseries4.clear();
+                    xyseries5.clear();
+                    xyseries6.clear();
                 }
             }
         });
 
         mYplusButton.setOnClickListener(new View.OnClickListener() {
             public void onClick(View v) {
-                double y_max, y_min;
-                if (EnableSerise1 | EnableSerise2 | EnableSerise3) {
+                double y_max, y_min , delta;
+                if (EnableSerise1 | EnableSerise4) {
                     y_max = mRenderer.getYAxisMax();
                     y_min = mRenderer.getYAxisMin();
-                    if (y_max > 0) {
-                        y_max /= 1.1;
-                    } else {
-                        y_max *= 1.1;
+
+                    delta =Math.abs(y_max - y_min);
+                    if(D)Log.d(TAG, "YPlus delta = "+""+delta);
+                    if(delta >=mRenderer.getZoomInLimitY())
+                    {
+
+                            y_max -= (delta*0.1/2);
+                            y_min += (delta*0.1/2);
+
+                        if (y_min < y_max) {
+                            mRenderer.setYAxisMax(y_max);
+                            mRenderer.setYAxisMin(y_min);
+                            Y_MAX = y_max;
+                            Y_MIN = y_min;
+                        }
+                        mChartView.repaint();
+                        showMessage(MotionXYChartBuilder.this,"YPlus Y  axis= "+""+delta);
+
                     }
 
-                    if (y_min > 0) {
-                        y_min *= 1.1;
-                    } else {
-                        y_min /= 1.1;
-                    }
-                    if (y_min < y_max) {
-                        mRenderer.setYAxisMax(y_max);
-                        mRenderer.setYAxisMin(y_min);
-                    }
-                    mChartView.repaint();
                 }
             }
         });
         mYdecButton.setOnClickListener(new View.OnClickListener() {
             public void onClick(View v) {
-                double y_max, y_min;
-                if (EnableSerise1 | EnableSerise2 | EnableSerise3) {
+                double y_max, y_min , delta;
+                if (EnableSerise1 | EnableSerise4) {
                     y_max = mRenderer.getYAxisMax();
                     y_min = mRenderer.getYAxisMin();
 
-                    if (y_max > 0) {
-                        y_max *= 1.1;
-                    } else {
-                        y_max /= 1.1;
+                    delta =Math.abs(y_max - y_min);
+                    if(D)Log.d(TAG, "Ydec delta = "+""+delta);
+                    //if(delta >=100)
+                    {
+                            y_max += (delta*0.1/2);
+                            y_min -= (delta*0.1/2);
+
+                        if (y_min < y_max) {
+                            mRenderer.setYAxisMax(y_max);
+                            mRenderer.setYAxisMin(y_min);
+                            Y_MAX = y_max;
+                            Y_MIN = y_min;
+                        }
+                        mChartView.repaint();
+                        showMessage(MotionXYChartBuilder.this,"Ydec Y  axis= "+""+delta);
                     }
 
-                    if (y_min > 0) {
-                        y_min /= 1.1;
-                    } else {
-                        y_min *= 1.1;
-                    }
-                    if (y_min < y_max) {
-                        mRenderer.setYAxisMax(y_max);
-                        mRenderer.setYAxisMin(y_min);
-                    }
-
-                    mChartView.repaint();
                 }
 
             }
         });
         mXplusButton.setOnClickListener(new View.OnClickListener() {
             public void onClick(View v) {
-                double x_max, x_min;
-                if (EnableSerise1 | EnableSerise2 | EnableSerise3) {
+                double x_max, x_min,delta;
+                if (EnableSerise1 | EnableSerise4) {
                     x_max = mRenderer.getXAxisMax();
                     x_min = mRenderer.getXAxisMin();
 
-                    if (x_max > 0) {
-                        x_max /= 1.1;
-                    } else {
-                        x_max *= 1.1;
-                    }
+                    delta = Math.abs(Math.abs(x_max) - Math.abs(x_min));
+                    if(D)Log.d(TAG, "Xplus delta = "+""+delta);
+                    if(delta >=mRenderer.getZoomInLimitX())
+                    {
+                            x_max -= (delta*0.1/2);
+                            x_min += (delta*0.1/2);
 
-                    if (x_min > 0) {
-                        x_min *= 1.1;
-
-                    } else {
-                        x_min /= 1.1;
-                        mRenderer.setYAxisMin(x_min);
+                        if (x_min < x_max) {
+                            mRenderer.setXAxisMax(x_max);
+                            mRenderer.setXAxisMin(x_min);
+                            X_MAX = x_max;
+                            X_MIN = x_min;
+                        }
+                        mChartView.repaint();
                     }
-                    if (x_min < x_max) {
-                        mRenderer.setXAxisMax(x_max);
-                        mRenderer.setXAxisMin(x_min);
-                    }
+                    showMessage(MotionXYChartBuilder.this,"XPlus X axis= "+""+delta);
 
-                    mChartView.repaint();
                 }
 
             }
         });
         mXdecButton.setOnClickListener(new View.OnClickListener() {
             public void onClick(View v) {
-                double x_max, x_min;
-                if (EnableSerise1 | EnableSerise2 | EnableSerise3) {
+                double x_max, x_min,delta;
+                if (EnableSerise1 | EnableSerise4) {
                     x_max = mRenderer.getXAxisMax();
                     x_min = mRenderer.getXAxisMin();
 
-                    if (x_max > 0) {
-                        x_max *= 1.1;
-                    } else {
-                        x_max /= 1.1;
-                    }
+                    delta =Math.abs(Math.abs(x_max) - Math.abs(x_min));
+                    if(D)Log.d(TAG, "Xdec delta = "+""+delta);
+                    //if(delta >=100)
+                    {
 
+                        x_max += (delta*0.1/2);
+                        x_min -= (delta*0.1/2);
 
-                    if (x_min > 0) {
-                        x_min /= 1.1;
-                    } else {
-                        x_min *= 1.1;
+                        if (x_min < x_max) {
+                            mRenderer.setXAxisMax(x_max);
+                            mRenderer.setXAxisMin(x_min);
+                            X_MAX = x_max;
+                            X_MIN = x_min;
+                        }
+                        mChartView.repaint();
+                        showMessage(MotionXYChartBuilder.this,"Xdec X axis= "+""+delta);
                     }
-                    if (x_min < x_max) {
-                        mRenderer.setXAxisMax(x_max);
-                        mRenderer.setXAxisMin(x_min);
-                    }
-
-                    mChartView.repaint();
                 }
 
             }
@@ -662,15 +655,15 @@ public class MotionXYChartBuilder extends Activity {
                         // handle the click event on the chart
                         SeriesSelection seriesSelection = mChartView.getCurrentSeriesAndPoint();
                         if (seriesSelection == null) {
-                            Toast.makeText(MotionXYChartBuilder.this, "No chart element", Toast.LENGTH_SHORT).show();
+                            showMessage(MotionXYChartBuilder.this, "No chart element");
                         } else {
                             // display information of the clicked point
-                            Toast.makeText(
+                            showMessage(
                                     MotionXYChartBuilder.this,
                                     "Chart element in series index " + seriesSelection.getSeriesIndex()
-                                            + " data point index " + seriesSelection.getPointIndex() + " was clicked"
-                                            + " closest point value X=" + seriesSelection.getXValue() + ", Y="
-                                            + seriesSelection.getValue(), Toast.LENGTH_SHORT).show();
+                                    + " data point index " + seriesSelection.getPointIndex() + " was clicked"
+                                    + " closest point value X=" + seriesSelection.getXValue() + ", Y="
+                                    + seriesSelection.getValue());
 
                             if(D)Log.i(TAG, "Chart element in series index " + seriesSelection.getSeriesIndex()
                                     + " data point index " + seriesSelection.getPointIndex() + " was clicked"
@@ -689,51 +682,29 @@ public class MotionXYChartBuilder extends Activity {
     protected void onResume() {
         Log.i(TAG, "onResume");
         super.onResume();
-        if (mChartView == null) {
-/*      LinearLayout layout = (LinearLayout) findViewById(R.id.chart);
-      mChartView = ChartFactory.getLineChartView(this, mDataset, mRenderer);
-      // enable the chart click events
-      mRenderer.setClickEnabled(true);
-      mRenderer.setSelectableBuffer(10);*/
-
-            mChartView.setOnClickListener(new View.OnClickListener() {
-                public void onClick(View v) {
-                    // handle the click event on the chart
-                    SeriesSelection seriesSelection = mChartView.getCurrentSeriesAndPoint();
-                    if (seriesSelection == null) {
-                        Toast.makeText(MotionXYChartBuilder.this, "No chart element", Toast.LENGTH_SHORT).show();
-                    } else {
-                        // display information of the clicked point
-                        Toast.makeText(
-                                MotionXYChartBuilder.this,
-                                "Chart element in series index " + seriesSelection.getSeriesIndex()
-                                        + " data point index " + seriesSelection.getPointIndex() + " was clicked"
-                                        + " closest point value X=" + seriesSelection.getXValue() + ", Y="
-                                        + seriesSelection.getValue(), Toast.LENGTH_SHORT).show();
-
-                        if(D)Log.i(TAG, "Chart element in series index " + seriesSelection.getSeriesIndex()
-                                + " data point index " + seriesSelection.getPointIndex() + " was clicked"
-                                + " closest point value X=" + seriesSelection.getXValue() + ", Y="
-                                + seriesSelection.getValue());
-                    }
+        if (mChartView != null && mStopButton.getText().equals("STOP")){
+            if (EnableSerise1) {
+                sm.registerListener(myAccelerometerListener, sm.getDefaultSensor(Sensor.TYPE_LINEAR_ACCELERATION), SensorDelay);
+            }
+            if (EnableSerise4) {
+                if(!UseOrientation)
+                    sm.registerListener(myAccelerometerListener, sm.getDefaultSensor(Sensor.TYPE_ORIENTATION), SensorDelay);
+                else
+                {
+                    sm.registerListener(myAccelerometerListener, sm.getDefaultSensor(Sensor.TYPE_ACCELEROMETER), SensorDelay);
+                    sm.registerListener(myAccelerometerListener, sm.getDefaultSensor(Sensor.TYPE_MAGNETIC_FIELD), SensorDelay);
+                    magneticFieldValues = null;
+                    accelerometerValues = null;
                 }
-            });
-/*      layout.addView(mChartView, new LayoutParams(LayoutParams.FILL_PARENT,
-          LayoutParams.FILL_PARENT));
-      boolean enabled = mDataset.getSeriesCount() > 0;
-      setSeriesWidgetsEnabled(enabled);*/
-        } else {
-            if (EnableSerise1 | EnableSerise2 | EnableSerise3) {
-                sm.registerListener(myAccelerometerListener, sm.getDefaultSensor(Sensor.TYPE_LINEAR_ACCELERATION), SensorManager.SENSOR_DELAY_FASTEST);
             }
             mChartView.repaint();
         }
     }
 
 
-    private void waveUpdataRoutine(float mx, float my, float mz) {
+    private void waveUpdataRoutine(int type ,float mx, float my, float mz) {
 
-        if (EnableSerise1) {
+        if (EnableSerise1 && type == Sensor.TYPE_LINEAR_ACCELERATION) {
             xyseries1.add(x_index, mx);
             if (mx > Y_max_buf) {
                 Y_max_buf = mx;
@@ -741,16 +712,12 @@ public class MotionXYChartBuilder extends Activity {
                 Y_min_buf = mx;
             }
 
-        }
-        if (EnableSerise2) {
             xyseries2.add(x_index, my);
             if (my > Y_max_buf) {
                 Y_max_buf = my;
             } else if (my < Y_min_buf) {
                 Y_min_buf = my;
             }
-        }
-        if (EnableSerise3) {
             xyseries3.add(x_index, mz);
             if (mz > Y_max_buf) {
                 Y_max_buf = mz;
@@ -759,67 +726,182 @@ public class MotionXYChartBuilder extends Activity {
             }
         }
 
-/*        if(Y_min_buf > Y_MAX)
-        {
-            Y_MAX = Y_min_buf * 1.1;
-            mRenderer.setYAxisMax(Y_MAX);
+        if (EnableSerise4 && type == Sensor.TYPE_ORIENTATION) {
+            xyseries4.add(x_index, mx);
+            xyseries5.add(x_index, my);
+            xyseries6.add(x_index, mz);
         }
-        else if(Y_min_buf < Y_MIN)
-        {
-            if(Y_min_buf<0)
-                Y_MIN = Y_min_buf * 1.1;
-            mRenderer.setYAxisMin(Y_MIN);
-        }*/
-        //X_MAX = mRenderer.getXAxisMax();
-        if (x_index * 1.2 > X_MAX) {
+
+/*        if (x_index * 1.2 > X_MAX) {
             X_MAX *= 1.2;//
             //X_MIN = X_MAX - 100;
             mRenderer.setXAxisMax(X_MAX);
+        }*/
+        if (x_index  >= X_MAX) {
+            X_MAX += 300/4;//
+            X_MIN += 300/4;
+            mRenderer.setXAxisMax(X_MAX);
+            mRenderer.setXAxisMin(X_MIN);
         }
-        x_index += 1;
-        mChartView.postInvalidate();
+
+        if(EnableSerise4 && type == Sensor.TYPE_ORIENTATION)
+        {
+            x_index += 1;
+            mChartView.postInvalidate();
+        }
+        else if(!EnableSerise4)
+        {
+            x_index += 1;
+            mChartView.postInvalidate();
+        }
+
+        //WaveUpdataThread tr = new WaveUpdataThread();
+        //Thread thread = new Thread(tr);
+        //thread.start();
+
     }
-
-
-/*    private void startTimer()
-    {
-        if(mTimer == null)
-        {
-            //1.creator timer
-            mTimer = new Timer();
-
-            //2.creator task
-            if(mTask == null)
-            {
-                mTask = new TimerTask() {
-                    @Override
-                    public void run() {
-                        // TODO Auto-generated method stub
-                        waveUpdataRoutine();
-                    }
-                };
+    class WaveUpdataThread implements Runnable {
+        public void run() {
+            while (!Thread.currentThread().isInterrupted()) {
+                try {
+                    Thread.sleep(0);
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                }
+                // 使用postInvalidate可以直接在线程中更新界面
+                mChartView.postInvalidate();
             }
-            //3.start timer
-                mTimer.schedule(mTask, 2000, 500);
+        }
+    }        //mChartView.postInvalidate();
+
+    private void enableAccWave() {
+        if (!InitSerise1) {
+            InitSerise1 = true;
+            EnableSerise1 = true;
+            // acc_x
+            datarenderer1 = new XYSeriesRenderer();
+            datarenderer1.setDisplayChartValues(false);
+            datarenderer1.setColor(SeriesColor[1]);
+            datarenderer1.setPointStyle(PointStyle.POINT);
+            mRenderer.addSeriesRenderer(datarenderer1);
+            Serise1StartIndex = x_index;
+
+            xyseries1 = new XYSeries("lacc_x");
+            mDataset.addSeries(0, xyseries1);
+
+            //acc y
+            datarenderer2 = new XYSeriesRenderer();
+            datarenderer2.setDisplayChartValues(false);
+            datarenderer2.setColor(SeriesColor[2]);
+            datarenderer2.setPointStyle(PointStyle.POINT);
+            mRenderer.addSeriesRenderer(datarenderer2);
+
+            xyseries2 = new XYSeries("lacc_y");
+            mDataset.addSeries(1, xyseries2);
+
+            //acc z
+            datarenderer3 = new XYSeriesRenderer();
+            datarenderer3.setDisplayChartValues(false);
+            datarenderer3.setColor(SeriesColor[3]);
+            datarenderer3.setPointStyle(PointStyle.POINT);
+            mRenderer.addSeriesRenderer(datarenderer3);
+
+            xyseries3 = new XYSeries("lacc_z");
+            mDataset.addSeries(2, xyseries3);
+
+        } else {
+
         }
 
-    }*/
+        /*
+        * 最常用的一个方法 注册事件
+        * 参数1 ：SensorEventListener监听器
+        * 参数2 ：Sensor 一个服务可能有多个Sensor实现，此处调用getDefaultSensor获取默认的Sensor
+        * 参数3 ：模式 可选数据变化的刷新频率
+        * */
+        sm.registerListener(myAccelerometerListener, sm.getDefaultSensor(Sensor.TYPE_LINEAR_ACCELERATION), SensorDelay);
+    }
+    private void enableOrientationWave() {
+        if (!InitSerise2) {
+            InitSerise2 = true;
+            EnableSerise4 = true;
+            // yaw
+            datarenderer4 = new XYSeriesRenderer();
+            datarenderer4.setDisplayChartValues(false);
+            datarenderer4.setColor(SeriesColor[4]);
+            datarenderer4.setPointStyle(PointStyle.POINT);
+            mRenderer.addSeriesRenderer(datarenderer4);
+            Serise2StartIndex = x_index;
 
+            xyseries4 = new XYSeries("yaw");
+            mDataset.addSeries(3, xyseries4);
 
-/*    private void stopTimer()
-    {
-        if(mTimer != null)
+            //pitch
+            datarenderer5 = new XYSeriesRenderer();
+            datarenderer5.setDisplayChartValues(false);
+            datarenderer5.setColor(SeriesColor[5]);
+            datarenderer5.setPointStyle(PointStyle.POINT);
+            mRenderer.addSeriesRenderer(datarenderer5);
+            xyseries5 = new XYSeries("pitch");
+            mDataset.addSeries(4, xyseries5);
+
+            // roll
+            datarenderer6 = new XYSeriesRenderer();
+            datarenderer6.setDisplayChartValues(false);
+            datarenderer6.setColor(SeriesColor[6]);
+            datarenderer6.setPointStyle(PointStyle.POINT);
+            mRenderer.addSeriesRenderer(datarenderer6);
+
+            xyseries6 = new XYSeries("roll");
+            mDataset.addSeries(5, xyseries6);
+
+        } else {
+            if (!EnableSerise4) {
+                mDataset.addSeries(3, xyseries4);
+                mDataset.addSeries(4, xyseries5);
+                mDataset.addSeries(5, xyseries6);
+                EnableSerise4 = true;
+            }
+        }
+
+        /*
+        * 最常用的一个方法 注册事件
+        * 参数1 ：SensorEventListener监听器
+        * 参数2 ：Sensor 一个服务可能有多个Sensor实现，此处调用getDefaultSensor获取默认的Sensor
+        * 参数3 ：模式 可选数据变化的刷新频率
+        * */
+        if(!UseOrientation)
+            sm.registerListener(myAccelerometerListener, sm.getDefaultSensor(Sensor.TYPE_ORIENTATION), SensorDelay);
+        else
         {
-            mTimer.cancel();
-            mTimer = null;
+            sm.registerListener(myAccelerometerListener, sm.getDefaultSensor(Sensor.TYPE_ACCELEROMETER), SensorDelay);
+            sm.registerListener(myAccelerometerListener, sm.getDefaultSensor(Sensor.TYPE_MAGNETIC_FIELD), SensorDelay);
+            magneticFieldValues = null;
+            accelerometerValues = null;
         }
-        if(mTask != null)
-        {
-            mTask.cancel();
-            mTask = null;
+    }
+    private void disableAccWave(){
+        if (EnableSerise1) {
+            datarenderer1.setColor(SeriesColor[0]);
+            datarenderer2.setColor(SeriesColor[0]);
+            datarenderer3.setColor(SeriesColor[0]);
         }
-    }*/
-
+    }
+    private void disableOrientationWave(){
+        if (EnableSerise4) {
+            datarenderer4.setColor(SeriesColor[0]);
+            datarenderer5.setColor(SeriesColor[0]);
+            datarenderer6.setColor(SeriesColor[0]);
+        }
+    }
+    private String saveStringFormat(XYSeries series,int index){
+        double y;
+        y = series.getY( index);
+        String str ="" + y;
+        str = ZozoXYChartBuilder.formatStr(str, 7) + ", ";
+        if(D)Log.i(TAG, "xyseries str=" + str );
+        return str;
+    }
     /*
      * SensorEventListener接口的实现，需要实现两个方法
      * 方法1 onSensorChanged 当数据变化的时候被触发调用
@@ -829,9 +911,9 @@ public class MotionXYChartBuilder extends Activity {
 
         //复写onSensorChanged方法
         public void onSensorChanged(SensorEvent sensorEvent) {
-            if(D)Log.i(TAG, "onSensorChanged");
-            if (sensorEvent.sensor.getType() == Sensor.TYPE_ACCELEROMETER) {
-                if(D)Log.i(TAG, "TYPE_ACCELEROMETER");
+            //if(M)Log.i(TAG, "onSensorChanged");
+/*            if (sensorEvent.sensor.getType() == Sensor.TYPE_ACCELEROMETER) {
+*//*                if(D)Log.i(TAG, "TYPE_ACCELEROMETER");
 
                 //图解中已经解释三个值的含义
                 float X_lateral = sensorEvent.values[0];
@@ -841,10 +923,10 @@ public class MotionXYChartBuilder extends Activity {
 
                 if(D)Log.i(TAG, "\n accel_x " + X_lateral);
                 if(D)Log.i(TAG, "\n accel_y " + Y_longitudinal);
-                if(D)Log.i(TAG, "\n accel_z " + Z_vertical);
-            }
+                if(D)Log.i(TAG, "\n accel_z " + Z_vertical);*//*
+            }*/
             if (sensorEvent.sensor.getType() == Sensor.TYPE_GRAVITY) {
-                if(D)Log.i(TAG, "TYPE_GRAVITY");
+/*                if(D)Log.i(TAG, "TYPE_GRAVITY");
 
                 //图解中已经解释三个值的含义
                 float X_lateral = sensorEvent.values[0];
@@ -854,7 +936,7 @@ public class MotionXYChartBuilder extends Activity {
                 waveUpdataRoutine(sensorEvent.values[0], sensorEvent.values[1], sensorEvent.values[2]);
                 if(D)Log.i(TAG, "\n gaccel_x " + X_lateral);
                 if(D)Log.i(TAG, "\n gaccel_y " + Y_longitudinal);
-                if(D)Log.i(TAG, "\n gaccel_z " + Z_vertical);
+                if(D)Log.i(TAG, "\n gaccel_z " + Z_vertical);*/
             }
             if (sensorEvent.sensor.getType() == Sensor.TYPE_LINEAR_ACCELERATION) {
 /*                Log.i(TAG, "TYPE_LINEAR_ACCELERATION");
@@ -868,12 +950,12 @@ public class MotionXYChartBuilder extends Activity {
                 Log.i(TAG, "\n Laccel_x " + X_lateral);
                 Log.i(TAG, "\n Laccel_y " + Y_longitudinal);
                 Log.i(TAG, "\n Laccel_z " + Z_vertical);*/
-
-                waveUpdataRoutine(sensorEvent.values[0], sensorEvent.values[1], sensorEvent.values[2]);
+                //if(M)Log.d(TAG, "TYPE_LINEAR_ACCELERATION");
+                waveUpdataRoutine(Sensor.TYPE_LINEAR_ACCELERATION,sensorEvent.values[0], sensorEvent.values[1], sensorEvent.values[2]);
             }
 
             if (sensorEvent.sensor.getType() == Sensor.TYPE_ORIENTATION) {
-                Log.i(TAG, "TYPE_ORIENTATION");
+/*                Log.i(TAG, "TYPE_ORIENTATION");
 
                 //图解中已经解释三个值的含义
                 float X_heading = sensorEvent.values[0];
@@ -883,7 +965,32 @@ public class MotionXYChartBuilder extends Activity {
 
                 Log.i(TAG, "\n heading " + X_heading);
                 Log.i(TAG, "\n pitch " + Y_pitch);
-                Log.i(TAG, "\n roll " + Z_roll);
+                Log.i(TAG, "\n roll " + Z_roll);*/
+                //if(M)Log.d(TAG, "TYPE_ORIENTATION");
+                waveUpdataRoutine(Sensor.TYPE_ORIENTATION,sensorEvent.values[0], sensorEvent.values[1], sensorEvent.values[2]);
+            }
+            if (sensorEvent.sensor.getType() == Sensor.TYPE_ACCELEROMETER) {
+                accelerometerValues = sensorEvent.values;
+            }
+            if (sensorEvent.sensor.getType() == Sensor.TYPE_MAGNETIC_FIELD) {
+                magneticFieldValues = sensorEvent.values;
+            }
+
+            if(UseOrientation)
+            {
+                if(accelerometerValues != null && magneticFieldValues != null)
+                {
+                    float[] values = new float[3];
+                    float[] R = new float[9];
+                    SensorManager.getRotationMatrix(R, null, accelerometerValues,
+                            magneticFieldValues);
+                    values = SensorManager.getOrientation(R, values);
+                    if(M)Log.d(TAG, "getOrientation");
+                    waveUpdataRoutine(Sensor.TYPE_ORIENTATION,values[0], values[1], values[2]);
+                    accelerometerValues = null;
+                    magneticFieldValues = null;
+                }
+
             }
 
         }
