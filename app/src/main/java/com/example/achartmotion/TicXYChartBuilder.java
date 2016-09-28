@@ -238,7 +238,6 @@ public class TicXYChartBuilder extends Activity implements MobvoiApiClient.Conne
                     //CreateFilePermissionFlag = false;
                     if(D)Log.i(TAG, "PackageManager.PERMISSION_GRANTED  refused");
                 }
-                return;
             }
         }
     }
@@ -272,12 +271,9 @@ public class TicXYChartBuilder extends Activity implements MobvoiApiClient.Conne
         }).start();
     }
 
-
     @Override
     protected void onCreate(Bundle savedInstanceState) {
-        if (D) {
-            Log.i(TAG, "onCreate");
-        }
+        if (D)Log.i(TAG, "onCreate");
         super.onCreate(savedInstanceState);
         setContentView(R.layout.xy_zozo_chart);
 
@@ -337,8 +333,8 @@ public class TicXYChartBuilder extends Activity implements MobvoiApiClient.Conne
         //mRenderer.setZoomEnabled(true);
         //mRenderer.setPanEnabled(true);
 
-        layout.addView(mChartView, new LayoutParams(LayoutParams.FILL_PARENT,
-                LayoutParams.FILL_PARENT));
+        layout.addView(mChartView, new LayoutParams(LayoutParams.MATCH_PARENT,
+                LayoutParams.MATCH_PARENT));
         //boolean enabled = mDataset.getSeriesCount() > 0;
         //setSeriesWidgetsEnabled(enabled);
 
@@ -356,7 +352,7 @@ public class TicXYChartBuilder extends Activity implements MobvoiApiClient.Conne
         mEnableButton.setOnClickListener(new View.OnClickListener() {
             public void onClick(View v) {
                 if (D) Log.i(TAG, "mEnableButton onClick");
-                int x = 0;
+                int x ;
 
                 try {
                     x = Integer.parseInt(mSeries.getText().toString());
@@ -405,7 +401,7 @@ public class TicXYChartBuilder extends Activity implements MobvoiApiClient.Conne
                         break;
                 }
 
-                mStopButton.setText("STOP");
+                mStopButton.setText(R.string.stop_button);
                 mSaveButton.setEnabled(false);
 
                 //
@@ -422,7 +418,7 @@ public class TicXYChartBuilder extends Activity implements MobvoiApiClient.Conne
                 if (D) {
                     Log.i(TAG, "mEnableButton onClick");
                 }
-                int x = 0;
+                int x;
 
                 try {
                     x = Integer.parseInt(mSeries.getText().toString());
@@ -470,19 +466,19 @@ public class TicXYChartBuilder extends Activity implements MobvoiApiClient.Conne
         mStopButton.setOnClickListener(new View.OnClickListener() {
             public void onClick(View v) {
                 Log.i(TAG, mStopButton.getText().toString());
-                if (mStopButton.getText().toString().equals("STOP")) {
+                if (mStopButton.getText().toString().equals(getString(R.string.stop_button))) {
                     SendMSG = STOP_PATH;
                     Log.d(TAG, "StartWearableActivityTask SendMSG=" + SendMSG);
                     new StartWearableActivityTask().execute();
-                    mStopButton.setText("START");
+                    mStopButton.setText(R.string.start_button);
                     mSaveButton.setEnabled(true);
-                } else if (mStopButton.getText().toString().equals("START")) {
+                } else if (mStopButton.getText().toString().equals(getString(R.string.start_button))) {
                     if (EnableSerise1 | EnableSerise4) {
                         SendMSG = RESTART_PATH;
                         Log.d(TAG, "StartWearableActivityTask SendMSG=" + SendMSG);
                         new StartWearableActivityTask().execute();
                     }
-                    mStopButton.setText("STOP");
+                    mStopButton.setText(R.string.stop_button);
                     mSaveButton.setEnabled(false);
                 }
             }
@@ -490,17 +486,12 @@ public class TicXYChartBuilder extends Activity implements MobvoiApiClient.Conne
 
         mSaveButton.setOnClickListener(new View.OnClickListener() {
             public void onClick(View v) {
-                //if(mStopButton.getText().toString().equals("STOP"))
-                {
-                    mStopButton.setText("START");
-                }
-
+                mStopButton.setText(R.string.stop_button);
                 // save
                 if (requestPermission()) {
-
                     if(D)Log.i(TAG, "getSDPath" + FileStoreTools.getSDPath());
                     //
-                    String str[] = new String[1000];
+                    //String str[] = new String[1000];
                     //Get the text file based on folder
 
                     File file = new File(FileStoreTools.getSDPath() + File.separator + "zozo_file");
@@ -508,16 +499,12 @@ public class TicXYChartBuilder extends Activity implements MobvoiApiClient.Conne
 
                     //x_index
                     String save_str;
-                    for (double i = 0, j = 0; i < x_index; i++) {
-                        double y;
-
+                    for (double i = 0; i < x_index; i++) {
                         save_str = "";
-
                         if(i > Serise1StartIndex){
                             save_str = saveStringFormat(xyseries1 , (int)i);
                             save_str = save_str + saveStringFormat(xyseries2 , (int)(i));
                             save_str = save_str + saveStringFormat(xyseries3 , (int)(i));
-
                         }
                         if(i > Serise2StartIndex)
                         {
@@ -692,7 +679,7 @@ public class TicXYChartBuilder extends Activity implements MobvoiApiClient.Conne
     protected void onResume() {
         Log.i(TAG, "onResume");
         super.onResume();
-        if (mChartView != null && mStopButton.getText().equals("STOP")){
+        if (mChartView != null && mStopButton.getText().equals("@strings/stop_button")){
             if (EnableSerise1) {
                 //sm.registerListener(myAccelerometerListener, sm.getDefaultSensor(Sensor.TYPE_LINEAR_ACCELERATION), SensorManager.SENSOR_DELAY_FASTEST);
             }

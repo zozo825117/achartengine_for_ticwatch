@@ -25,7 +25,9 @@
         <activity android:name="org.achartengine.chartdemo.demo.chart.PieChartBuilder" />
         <activity android:name="org.achartengine.GraphicalActivity" />
         <activity android:name=".GeneratedChartDemo" />
-        <activity android:name="com.example.achartmotion.TicXYChartBuilder" />
+        <activity android:name="com.example.achartmotion.TicXYChartBuilder"
+                  android:configChanges="orientation|screenSize"
+        />
         <!-- ATTENTION: This was auto-generated to add Google Play services to your project for
              App Indexing.  See https://g.co/AppIndexing/AndroidStudio for more information. -->
         <meta-data
