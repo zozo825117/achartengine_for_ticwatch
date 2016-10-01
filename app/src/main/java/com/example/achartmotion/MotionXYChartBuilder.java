@@ -49,10 +49,18 @@ import android.widget.EditText;
 import android.widget.LinearLayout;
 import android.widget.Toast;
 
+import com.fusion.FusionTask;
+import com.fusion.types.SV_9DOF_GBY_KALMAN;
+import com.fusion.types.Types;
+import com.fusion.Orientation;
+import com.fusion.types.Fquaternion;
+import com.fusion.types.MagSensor;
+import com.fusion.types.ProjectGlobals;
 import com.google.android.gms.appindexing.AppIndex;
 import com.google.android.gms.common.api.GoogleApiClient;
 
 import java.io.File;
+import java.util.List;
 
 
 public class MotionXYChartBuilder extends Activity {
@@ -120,7 +128,7 @@ public class MotionXYChartBuilder extends Activity {
 
     boolean D = true;
     boolean M = true;
-    boolean UseOrientation = true;
+    boolean UseOrientation = false;
 
     private static final String TAG = "MotionXYChartBuilder";
 
@@ -139,15 +147,20 @@ public class MotionXYChartBuilder extends Activity {
     XYSeriesRenderer datarenderer1, datarenderer2, datarenderer3,datarenderer4, datarenderer5, datarenderer6;
     //motion
     private SensorManager sm;
+    private Sensor sensor;
     //toast
     private static Handler handler = new Handler(Looper.getMainLooper());
     private static Toast toast = null;
     private final static Object synObj = new Object();
 
     private float[] accelerometerValues = new float[3];
-    private float[] magneticFieldValues = new float[3];
+    private float magneticFieldValues[] = new float[3];
+    private float GyroscopeValues[] = new float[3];
 
-     final int SensorDelay = SensorManager.SENSOR_DELAY_UI;
+    private boolean UsedFusion;
+
+
+     final int SensorDelay = SensorManager.SENSOR_DELAY_FASTEST; //SENSOR_DELAY_UI
 
     final  int[] SeriesColor = {
             Color.TRANSPARENT,
@@ -163,6 +176,10 @@ public class MotionXYChartBuilder extends Activity {
      * See https://g.co/AppIndexing/AndroidStudio for more information.
      */
     private GoogleApiClient client;
+
+    FusionTask fusiontask = new FusionTask();
+
+    private Sensor msensor,asensor,gsensor;
 
     /**
      * Enable or disable the add data to series widgets
@@ -253,6 +270,7 @@ public class MotionXYChartBuilder extends Activity {
     }
 
 
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         if (D) {
@@ -325,6 +343,28 @@ public class MotionXYChartBuilder extends Activity {
         //创建一个SensorManager来获取系统的传感器服务
         sm = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
 
+        //获得传感器信息
+        List<Sensor> Sensorlist= sm.getSensorList(Sensor.TYPE_ALL);
+        String text=" 你的手机总共拥有传感器的个数为："+Sensorlist.size() +" 个 \n\n";
+        if(D) Log.i(TAG,text);
+        for (Sensor sensor : Sensorlist) {
+            Log.i("Sensor", sensor.getName()+sensor.getType());
+            text=" 名称: "+sensor.getName()+"\n 能量: "+sensor.getPower()+"\n 分辨率: "+ sensor.getResolution()
+            +"\n 厂商: "+sensor.getVendor()+"\n 版本: "+sensor.getVersion()+"\n 最小延时: "+sensor.getMinDelay()
+            + "\n最大跨度: "+sensor.getMaximumRange()+"\n----------------------------------------------------\n";
+            if(D) Log.i(TAG,text);
+            if(sensor.getType() == 1)
+            {
+                asensor  = sensor;
+            }else if(sensor.getType() == 2){
+                msensor = sensor;
+            }else if(sensor.getType() == 4){
+                gsensor = sensor;
+            }
+
+        }
+
+
         mEnableButton.setOnClickListener(new View.OnClickListener() {
             public void onClick(View v) {
                 if (D) Log.i(TAG, "mEnableButton onClick");
@@ -382,11 +422,21 @@ public class MotionXYChartBuilder extends Activity {
                         }
                         break;
                     }
+                    case 8:{
+                        UsedFusion = true;
+                        sm.registerListener(myAccelerometerListener, sm.getDefaultSensor(Sensor.TYPE_ACCELEROMETER), SensorDelay);
+                        sm.registerListener(myAccelerometerListener, sm.getDefaultSensor(Sensor.TYPE_MAGNETIC_FIELD), SensorDelay);
+                        sm.registerListener(myAccelerometerListener, sm.getDefaultSensor(Sensor.TYPE_GYROSCOPE), SensorDelay);
+                        magneticFieldValues = null;
+                        accelerometerValues = null;
+                        GyroscopeValues = null;
+                        break;
+                    }
                     default:
                         break;
                 }
 
-                mStopButton.setText("STOP");
+                mStopButton.setText(R.string.stop_button);
                 mSaveButton.setEnabled(false);
 
                 //
@@ -438,6 +488,14 @@ public class MotionXYChartBuilder extends Activity {
                         datarenderer6.setColor(SeriesColor[0]);
                         break;
                     }
+                    case 8:{
+                        UsedFusion = false;
+                        sm.unregisterListener(myAccelerometerListener);
+                        magneticFieldValues = null;
+                        accelerometerValues = null;
+                        GyroscopeValues = null;
+                        break;
+                    }
                     default:
                         break;
                 }
@@ -451,10 +509,10 @@ public class MotionXYChartBuilder extends Activity {
         mStopButton.setOnClickListener(new View.OnClickListener() {
             public void onClick(View v) {
                 Log.i(TAG, mStopButton.getText().toString());
-                if (mStopButton.getText().toString().equals("STOP")) {
+                if (mStopButton.getText().toString().equals(getString(R.string.stop_button))) {
                     //stopTimer();
                     sm.unregisterListener(myAccelerometerListener);
-                    mStopButton.setText("START");
+                    mStopButton.setText(R.string.start_button);
                     mSaveButton.setEnabled(true);
                 } else if (mStopButton.getText().toString().equals("START")) {
                     if (EnableSerise1) {
@@ -471,7 +529,7 @@ public class MotionXYChartBuilder extends Activity {
                             accelerometerValues = null;
                         }
                     }
-                    mStopButton.setText("STOP");
+                    mStopButton.setText(R.string.stop_button);
                     mSaveButton.setEnabled(false);
                 }
             }
@@ -479,11 +537,8 @@ public class MotionXYChartBuilder extends Activity {
 
         mSaveButton.setOnClickListener(new View.OnClickListener() {
             public void onClick(View v) {
-                //if(mStopButton.getText().toString().equals("STOP"))
-                {
                     sm.unregisterListener(myAccelerometerListener);
-                    mStopButton.setText("START");
-                }
+                    mStopButton.setText(R.string.start_button);
 
                 // save
                 if (requestPermission()) {
@@ -676,13 +731,31 @@ public class MotionXYChartBuilder extends Activity {
         // ATTENTION: This was auto-generated to implement the App Indexing API.
         // See https://g.co/AppIndexing/AndroidStudio for more information.
         client = new GoogleApiClient.Builder(this).addApi(AppIndex.API).build();
+
+
+        //test
+        Fquaternion a = new Fquaternion();
+        Fquaternion b = new Fquaternion();
+        a.q0 = 1;
+        a.q1 = 2;
+        b.q0 = 3;
+        b.q1 = 5;
+        b.q2 = 7;
+        b.q3 = 8;
+        Log.d(TAG,"a " + ""+ a.q0 + ""+ a.q1 + ""+ a.q2 + ""+ a.q3 );
+        Orientation.qAeqAxB(a,b);
+        Log.d(TAG,"qAeqAxB a " + ""+ a.q0 + ""+a.q1+ ""+a.q2 + ""+a.q3 );
+
+
+
+
     }//oncreate end
 
     @Override
     protected void onResume() {
         Log.i(TAG, "onResume");
         super.onResume();
-        if (mChartView != null && mStopButton.getText().equals("STOP")){
+        if (mChartView != null && mStopButton.getText().equals(getString(R.string.stop_button))){
             if (EnableSerise1) {
                 sm.registerListener(myAccelerometerListener, sm.getDefaultSensor(Sensor.TYPE_LINEAR_ACCELERATION), SensorDelay);
             }
@@ -975,6 +1048,10 @@ public class MotionXYChartBuilder extends Activity {
             if (sensorEvent.sensor.getType() == Sensor.TYPE_MAGNETIC_FIELD) {
                 magneticFieldValues = sensorEvent.values;
             }
+            if(sensorEvent.sensor.getType() == Sensor.TYPE_GYROSCOPE)
+            {
+                GyroscopeValues = sensorEvent.values;
+            }
 
             if(UseOrientation)
             {
@@ -989,6 +1066,34 @@ public class MotionXYChartBuilder extends Activity {
                     waveUpdataRoutine(Sensor.TYPE_ORIENTATION,values[0], values[1], values[2]);
                     accelerometerValues = null;
                     magneticFieldValues = null;
+                }
+
+
+
+            }
+            if(UsedFusion)
+            {
+                if(accelerometerValues != null && magneticFieldValues != null
+                        && GyroscopeValues != null){
+                    String str1 = "accel = "+accelerometerValues[0] + "=="+accelerometerValues[1]
+                            + "=="+accelerometerValues[2] + "\n";
+
+                    String str2 = "mag = "+magneticFieldValues[0] + "=="+magneticFieldValues[1]
+                            + "2="+magneticFieldValues[2] + "\n";
+                    String str3 = "Gyro = "+GyroscopeValues[0] + "=="+GyroscopeValues[1]
+                            + "=="+GyroscopeValues[2] + "\n";
+                    if(M) Log.d(TAG, str1 + str2 + str3);
+                    fusiontask.Fusion_Task((int [])accelerometerValues,magneticFieldValues,GyroscopeValues);
+
+                    SV_9DOF_GBY_KALMAN thisSV;
+                    thisSV = fusiontask.thisSV_9DOF_GBY_KALMAN;
+                    thisSV.fAccGl[0]
+
+                    magneticFieldValues = null;
+                    accelerometerValues = null;
+                    GyroscopeValues = null;
+
+
                 }
 
             }
