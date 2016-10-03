@@ -21,7 +21,9 @@
         </activity>
         <activity android:name="org.achartengine.chartdemo.demo.chart.XYChartBuilder" />
         <activity android:name="org.achartengine.chartdemo.demo.chart.ZozoXYChartBuilder"/>
-	    <activity android:name="com.example.achartmotion.MotionXYChartBuilder" />
+	    <activity android:name="com.example.achartmotion.MotionXYChartBuilder"
+                  android:configChanges="orientation|screenSize"
+            />
         <activity android:name="org.achartengine.chartdemo.demo.chart.PieChartBuilder" />
         <activity android:name="org.achartengine.GraphicalActivity" />
         <activity android:name=".GeneratedChartDemo" />

@@ -19,7 +19,7 @@ public class MagCalibration {
     public float fmatB[][] = new float[10][10];			// scratch 10x10 matrix used by calibration algorithms
     public float fvecA[] = new float[10];				// scratch 10x1 vector used by calibration algorithms
     public float fvecB[] = new float[4];					// scratch 4x1 vector used by calibration algorithms
-    public int iCalInProgress;			// flag denoting that a calibration is in progress
-    public int iMagCalHasRun;				// flag denoting that at least one calibration has been launched
-    public boolean iValidMagCal;				// integer value 0, 4, 7, 10 denoting both valid calibration and solver used
+    public boolean iCalInProgress;			// flag denoting that a calibration is in progress
+    public boolean iMagCalHasRun;				// flag denoting that at least one calibration has been launched
+    public int iValidMagCal;				// integer value 0, 4, 7, 10 denoting both valid calibration and solver used
 }

@@ -42,6 +42,81 @@ public class Orientation extends Types{
     private static final float CORRUPTQUAT = 0.001F;	// threshold for deciding rotation quaternion is corrupt
     private static final float SMALLMODULUS = 0.01F;	// limit where rounding errors may appear
 
+    // Aerospace NED accelerometer 3DOF tilt function computing rotation matrix fR
+    static void f3DOFTiltNED(float fR[][], float fGs[])
+    {
+        // the NED self-consistency twist occurs at 90 deg pitch
+
+        // local variables
+        int i;				// counter
+        float fmodGxyz;			// modulus of the x, y, z accelerometer readings
+        float fmodGyz;			// modulus of the y, z accelerometer readings
+        float frecipmodGxyz;	// reciprocal of modulus
+        float ftmp;				// scratch variable
+
+        // compute the accelerometer squared magnitudes
+        fmodGyz = fGs[CHY] * fGs[CHY] + fGs[CHZ] * fGs[CHZ];
+        fmodGxyz = fmodGyz + fGs[CHX] * fGs[CHX];
+
+        // check for freefall special case where no solution is possible
+        if (fmodGxyz == 0.0F)
+        {
+            Matrix.f3x3matrixAeqI(fR);
+            return;
+        }
+
+        // check for vertical up or down gimbal lock case
+        if (fmodGyz == 0.0F)
+        {
+            Matrix.f3x3matrixAeqScalar(fR, 0.0F);
+            fR[CHY][CHY] = 1.0F;
+            if (fGs[CHX] >= 0.0F)
+            {
+                fR[CHX][CHZ] = 1.0F;
+                fR[CHZ][CHX] = -1.0F;
+            }
+            else
+            {
+                fR[CHX][CHZ] = -1.0F;
+                fR[CHZ][CHX] = 1.0F;
+            }
+            return;
+        }
+
+        // compute moduli for the general case
+        fmodGyz = (float) Math.sqrt(fmodGyz);
+        fmodGxyz = (float) Math.sqrt(fmodGxyz);
+        frecipmodGxyz = 1.0F / fmodGxyz;
+        ftmp = fmodGxyz / fmodGyz;
+
+        // normalize the accelerometer reading into the z column
+        for (i = CHX; i <= CHZ; i++)
+        {
+            fR[i][CHZ] = fGs[i] * frecipmodGxyz;
+        }
+
+        // construct x column of orientation matrix
+        fR[CHX][CHX] = fmodGyz * frecipmodGxyz;
+        fR[CHY][CHX] = -fR[CHX][CHZ] * fR[CHY][CHZ] * ftmp;
+        fR[CHZ][CHX] = -fR[CHX][CHZ] * fR[CHZ][CHZ] * ftmp;
+
+        // construct y column of orientation matrix
+        fR[CHX][CHY] = 0.0F;
+        fR[CHY][CHY] = fR[CHZ][CHZ] * ftmp;
+        fR[CHZ][CHY] = -fR[CHY][CHZ] * ftmp;
+
+        //return;
+    }
+
+    // Android accelerometer 3DOF tilt function computing rotation matrix fR
+    static void f3DOFTiltAndroid(float fR[][], float fGs[])
+    {
+        // the Android tilt matrix is mathematically identical to the NED tilt matrix
+        // the Android self-consistency twist occurs at 90 deg roll
+        f3DOFTiltNED(fR, fGs);
+        //return;
+    }
+
     // Android: 6DOF e-Compass function computing least squares fit to orientation quaternion fq
     // on the assumption that the geomagnetic field fB and magnetic inclination angle fDelta are known
     static void fLeastSquareseCompassAndroid(Fquaternion pfq, float fB, float fDelta, float fsinDelta, float fcosDelta,
@@ -273,6 +348,47 @@ public class Orientation extends Types{
             // rounding errors are present
             pq.q0 = 0.0F;
         }
+
+        //return;
+    }
+
+    // compute the orientation quaternion from a 3x3 rotation matrix
+    static void fQuaternionFromRotationMatrix(float R[][], Fquaternion pq)
+    {
+        float fq0sq;			// q0^2
+        float recip4q0;			// 1/4q0
+
+        // the quaternion is not explicitly normalized in this function on the assumption that it
+        // is supplied with a normalized rotation matrix. if the rotation matrix is normalized then
+        // the quaternion will also be normalized even if the case of small q0
+
+        // get q0^2 and q0
+        fq0sq = 0.25F * (1.0F + R[CHX][CHX] + R[CHY][CHY] + R[CHZ][CHZ]);
+        pq.q0 = (float) Math.sqrt(Math.abs(fq0sq));
+
+        // normal case when q0 is not small meaning rotation angle not near 180 deg
+        if (pq.q0 > SMALLQ0)
+        {
+            // calculate q1 to q3
+            recip4q0 = 0.25F / pq.q0;
+            pq.q1 = recip4q0 * (R[CHY][CHZ] - R[CHZ][CHY]);
+            pq.q2 = recip4q0 * (R[CHZ][CHX] - R[CHX][CHZ]);
+            pq.q3 = recip4q0 * (R[CHX][CHY] - R[CHY][CHX]);
+        } // end of general case
+        else
+        {
+            // special case of near 180 deg corresponds to nearly symmetric matrix
+            // which is not numerically well conditioned for division by small q0
+            // instead get absolute values of q1 to q3 from leading diagonal
+            pq.q1 = (float) Math.sqrt(Math.abs(0.5F * (1.0F + R[CHX][CHX]) - fq0sq));
+            pq.q2 = (float) Math.sqrt(Math.abs(0.5F * (1.0F + R[CHY][CHY]) - fq0sq));
+            pq.q3 = (float) Math.sqrt(Math.abs(0.5F * (1.0F + R[CHZ][CHZ]) - fq0sq));
+
+            // correct the signs of q1 to q3 by examining the signs of differenced off-diagonal terms
+            if ((R[CHY][CHZ] - R[CHZ][CHY]) < 0.0F) pq.q1 = -pq.q1;
+            if ((R[CHZ][CHX] - R[CHX][CHZ]) < 0.0F) pq.q2 = -pq.q2;
+            if ((R[CHX][CHY] - R[CHY][CHX]) < 0.0F) pq.q3 = -pq.q3;
+        } // end of special case
 
         //return;
     }

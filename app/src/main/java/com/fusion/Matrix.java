@@ -1,5 +1,7 @@
 package com.fusion;
 
+import com.fusion.types.Types;
+
 /**
  * Created by zozo on 2016/9/27.
  */
@@ -30,8 +32,26 @@ package com.fusion;
 //
 // This file contains matrix manipulation functions.
 //
-public class Matrix {
+public class Matrix extends Types {
 
+    // function sets the 3x3 matrix A to the identity matrix
+    static void f3x3matrixAeqI(float A[][])
+    {
+        //float pAij;	// pointer to A[i][j]
+        int i, j;		// loop counters
+
+        for (i = 0; i < 3; i++)
+        {
+            // set pAij to &A[i][j=0]
+            //pAij = A[i];
+            for (j = 0; j < 3; j++)
+            {
+                A[i][j] = 0.0F;
+            }
+            A[i][i] = 1.0F;
+        }
+        return;
+    }
     // function sets 3x3 matrix A to 3x3 matrix B
     static void f3x3matrixAeqB(float A[][], float B[][])
     {
@@ -63,6 +83,254 @@ public class Matrix {
             }
             A[i][i] = 1.0F;
         }
+        return;
+    }
+
+    // function sets every entry in the 3x3 matrix A to a constant scalar
+    static void f3x3matrixAeqScalar(float A[][], float Scalar)
+    {
+        //float *pAij;	// pointer to A[i][j]
+        int i, j;		// counters
+
+        for (i = 0; i < 3; i++)
+        {
+            // set pAij to &A[i][j=0]
+            //pAij = A[i];
+            for (j = 0; j < 3; j++)
+            {
+                A[i][j] = Scalar;
+            }
+        }
+        //return;
+    }
+    // function multiplies all elements of 3x3 matrix A by the specified scalar
+    static void f3x3matrixAeqAxScalar(float A[][], float Scalar)
+    {
+        //float *pAij;	// pointer to A[i][j]
+        int i, j;		// loop counters
+
+        for (i = 0; i < 3; i++)
+        {
+            // set pAij to &A[i][j=0]
+            //pAij = A[i];
+            for (j = 0; j < 3; j++)
+            {
+                A[i][j] *= Scalar;
+            }
+        }
+
+        //return;
+    }
+
+    // function negates all elements of 3x3 matrix A
+    static void f3x3matrixAeqMinusA(float A[][])
+    {
+        //float *pAij;	// pointer to A[i][j]
+        int i, j;		// loop counters
+
+        for (i = 0; i < 3; i++)
+        {
+            // set pAij to &A[i][j=0]
+            //pAij = A[i];
+            for (j = 0; j < 3; j++)
+            {
+                A[i][j] = -A[i][j];
+                //pAij++;
+            }
+        }
+
+        //return;
+    }
+
+    // function directly calculates the symmetric inverse of a symmetric 3x3 matrix
+// only the on and above diagonal terms in B are used and need to be specified
+    static void f3x3matrixAeqInvSymB(float A[][], float B[][])
+    {
+        float fB11B22mB12B12;	// B[1][1] * B[2][2] - B[1][2] * B[1][2]
+        float fB12B02mB01B22;	// B[1][2] * B[0][2] - B[0][1] * B[2][2]
+        float fB01B12mB11B02;	// B[0][1] * B[1][2] - B[1][1] * B[0][2]
+        float ftmp;				// determinant and then reciprocal
+
+        // calculate useful products
+        fB11B22mB12B12 = B[1][1] * B[2][2] - B[1][2] * B[1][2];
+        fB12B02mB01B22 = B[1][2] * B[0][2] - B[0][1] * B[2][2];
+        fB01B12mB11B02 = B[0][1] * B[1][2] - B[1][1] * B[0][2];
+
+        // set ftmp to the determinant of the input matrix B
+        ftmp = B[0][0] * fB11B22mB12B12 + B[0][1] * fB12B02mB01B22 + B[0][2] * fB01B12mB11B02;
+
+        // set A to the inverse of B for any determinant except zero
+        if (ftmp != 0.0F)
+        {
+            ftmp = 1.0F / ftmp;
+            A[0][0] = fB11B22mB12B12 * ftmp;
+            A[1][0] = A[0][1] = fB12B02mB01B22 * ftmp;
+            A[2][0] = A[0][2] = fB01B12mB11B02 * ftmp;
+            A[1][1] = (B[0][0] * B[2][2] - B[0][2] * B[0][2]) * ftmp;
+            A[2][1] = A[1][2] = (B[0][2] * B[0][1] - B[0][0] * B[1][2]) * ftmp;
+            A[2][2] = (B[0][0] * B[1][1] - B[0][1] * B[0][1]) * ftmp;
+        }
+        else
+        {
+            // provide the identity matrix if the determinant is zero
+            f3x3matrixAeqI(A);
+        }
+        //return;
+    }
+
+    // function calculates the determinant of a 3x3 matrix
+    static float f3x3matrixDetA(float A[][])
+    {
+        return (A[CHX][CHX] * (A[CHY][CHY] * A[CHZ][CHZ] - A[CHY][CHZ] * A[CHZ][CHY]) +
+                A[CHX][CHY] * (A[CHY][CHZ] * A[CHZ][CHX] - A[CHY][CHX] * A[CHZ][CHZ]) +
+                A[CHX][CHZ] * (A[CHY][CHX] * A[CHZ][CHY] - A[CHY][CHY] * A[CHZ][CHX]));
+    }
+
+    // function computes all eigenvalues and eigenvectors of a real symmetric matrix A[0..n-1][0..n-1]
+// stored in the top left of a 10x10 array A[10][10]
+// A[][] is changed on output.
+// eigval[0..n-1] returns the eigenvalues of A[][].
+// eigvec[0..n-1][0..n-1] returns the normalized eigenvectors of A[][]
+// the eigenvectors are not sorted by value
+// n can vary up to and including 10 but the matrices A and eigvec must have 10 columns.
+    static void eigencompute10(float A[][], float eigval[], float eigvec[][], int n)
+    {
+        // maximum number of iterations to achieve convergence: in practice 6 is typical
+         int NITERATIONS = 15;
+
+        // various trig functions of the jacobi rotation angle phi
+        float cot2phi, tanhalfphi, tanphi, sinphi, cosphi;
+        // scratch variable to prevent over-writing during rotations
+        float ftmp;
+        // residue from remaining non-zero above diagonal terms
+        float residue;
+        // matrix row and column indices
+        int ir, ic;
+        // general loop counter
+        int j;
+        // timeout ctr for number of passes of the algorithm
+        int ctr;
+
+        // initialize eigenvectors matrix and eigenvalues array
+        for (ir = 0; ir < n; ir++)
+        {
+            // loop over all columns
+            for (ic = 0; ic < n; ic++)
+            {
+                // set on diagonal and off-diagonal elements to zero
+                eigvec[ir][ic] = 0.0F;
+            }
+
+            // correct the diagonal elements to 1.0
+            eigvec[ir][ir] = 1.0F;
+
+            // initialize the array of eigenvalues to the diagonal elements of m
+            eigval[ir] = A[ir][ir];
+        }
+
+        // initialize the counter and loop until converged or NITERATIONS reached
+        ctr = 0;
+        do
+        {
+            // compute the absolute value of the above diagonal elements as exit criterion
+            residue = 0.0F;
+            // loop over rows excluding last row
+            for (ir = 0; ir < n - 1; ir++)
+            {
+                // loop over above diagonal columns
+                for (ic = ir + 1; ic < n; ic++)
+                {
+                    // accumulate the residual off diagonal terms which are being driven to zero
+                    residue += Math.abs(A[ir][ic]);
+                }
+            }
+
+            // check if we still have work to do
+            if (residue > 0.0F)
+            {
+                // loop over all rows with the exception of the last row (since only rotating above diagonal elements)
+                for (ir = 0; ir < n - 1; ir++)
+                {
+                    // loop over columns ic (where ic is always greater than ir since above diagonal)
+                    for (ic = ir + 1; ic < n; ic++)
+                    {
+                        // only continue with this element if the element is non-zero
+                        if (Math.abs(A[ir][ic]) > 0.0F)
+                        {
+                            // calculate cot(2*phi) where phi is the Jacobi rotation angle
+                            cot2phi = 0.5F * (eigval[ic] - eigval[ir]) / (A[ir][ic]);
+
+                            // calculate tan(phi) correcting sign to ensure the smaller solution is used
+                            tanphi = 1.0F / (Math.abs(cot2phi) + (float) Math.sqrt(1.0F + cot2phi * cot2phi));
+                            if (cot2phi < 0.0F)
+                            {
+                                tanphi = -tanphi;
+                            }
+
+                            // calculate the sine and cosine of the Jacobi rotation angle phi
+                            cosphi = 1.0F / (float) Math.sqrt(1.0F + tanphi * tanphi);
+                            sinphi = tanphi * cosphi;
+
+                            // calculate tan(phi/2)
+                            tanhalfphi = sinphi / (1.0F + cosphi);
+
+                            // set tmp = tan(phi) times current matrix element used in update of leading diagonal elements
+                            ftmp = tanphi * A[ir][ic];
+
+                            // apply the jacobi rotation to diagonal elements [ir][ir] and [ic][ic] stored in the eigenvalue array
+                            // eigval[ir] = eigval[ir] - tan(phi) * A[ir][ic]
+                            eigval[ir] -= ftmp;
+                            // eigval[ic] = eigval[ic] + tan(phi) * A[ir][ic]
+                            eigval[ic] += ftmp;
+
+                            // by definition, applying the jacobi rotation on element ir, ic results in 0.0
+                            A[ir][ic] = 0.0F;
+
+                            // apply the jacobi rotation to all elements of the eigenvector matrix
+                            for (j = 0; j < n; j++)
+                            {
+                                // store eigvec[j][ir]
+                                ftmp = eigvec[j][ir];
+                                // eigvec[j][ir] = eigvec[j][ir] - sin(phi) * (eigvec[j][ic] + tan(phi/2) * eigvec[j][ir])
+                                eigvec[j][ir] = ftmp - sinphi * (eigvec[j][ic] + tanhalfphi * ftmp);
+                                // eigvec[j][ic] = eigvec[j][ic] + sin(phi) * (eigvec[j][ir] - tan(phi/2) * eigvec[j][ic])
+                                eigvec[j][ic] = eigvec[j][ic] + sinphi * (ftmp - tanhalfphi * eigvec[j][ic]);
+                            }
+
+                            // apply the jacobi rotation only to those elements of matrix m that can change
+                            for (j = 0; j <= ir - 1; j++)
+                            {
+                                // store A[j][ir]
+                                ftmp = A[j][ir];
+                                // A[j][ir] = A[j][ir] - sin(phi) * (A[j][ic] + tan(phi/2) * A[j][ir])
+                                A[j][ir] = ftmp - sinphi * (A[j][ic] + tanhalfphi * ftmp);
+                                // A[j][ic] = A[j][ic] + sin(phi) * (A[j][ir] - tan(phi/2) * A[j][ic])
+                                A[j][ic] = A[j][ic] + sinphi * (ftmp - tanhalfphi * A[j][ic]);
+                            }
+                            for (j = ir + 1; j <= ic - 1; j++)
+                            {
+                                // store A[ir][j]
+                                ftmp = A[ir][j];
+                                // A[ir][j] = A[ir][j] - sin(phi) * (A[j][ic] + tan(phi/2) * A[ir][j])
+                                A[ir][j] = ftmp - sinphi * (A[j][ic] + tanhalfphi * ftmp);
+                                // A[j][ic] = A[j][ic] + sin(phi) * (A[ir][j] - tan(phi/2) * A[j][ic])
+                                A[j][ic] = A[j][ic] + sinphi * (ftmp - tanhalfphi * A[j][ic]);
+                            }
+                            for (j = ic + 1; j < n; j++)
+                            {
+                                // store A[ir][j]
+                                ftmp = A[ir][j];
+                                // A[ir][j] = A[ir][j] - sin(phi) * (A[ic][j] + tan(phi/2) * A[ir][j])
+                                A[ir][j] = ftmp - sinphi * (A[ic][j] + tanhalfphi * ftmp);
+                                // A[ic][j] = A[ic][j] + sin(phi) * (A[ir][j] - tan(phi/2) * A[ic][j])
+                                A[ic][j] = A[ic][j] + sinphi * (ftmp - tanhalfphi * A[ic][j]);
+                            }
+                        }  // end of test for matrix element already zero
+                    }  // end of loop over columns
+                }  // end of loop over rows
+            }  // end of test for non-zero residue
+        } while ((residue > 0.0F) && (ctr++ < NITERATIONS)); // end of main loop
+
         return;
     }
 

@@ -1,5 +1,8 @@
 package com.fusion;
 
+import android.nfc.Tag;
+import android.util.Log;
+
 import com.fusion.types.SV_9DOF_GBY_KALMAN;
 import com.fusion.types.AccelSensor;
 import com.fusion.types.MagSensor;
@@ -7,6 +10,10 @@ import com.fusion.types.MagCalibration;
 import com.fusion.types.Types;
 import com.fusion.types.GyroSensor;
 import com.fusion.types.Fquaternion;
+import com.fusion.types.SV_6DOF_GY_KALMAN;
+
+import static com.fusion.types.Types.quaternion.Q6AG;
+
 
 // Copyright (c) 2014, 2015, Freescale Semiconductor, Inc.
 // All rights reserved.
@@ -41,6 +48,16 @@ import com.fusion.types.Fquaternion;
 
 public class Fusion extends Types{
 
+    private static boolean D = true;
+    private static String TAG = "Fusion";
+    // *********************************************************************************
+    // COMPUTE_6DOF_GY_KALMAN constants
+    // *********************************************************************************
+
+    // gyro sensor noise covariance units deg^2
+    private static final float FQVY_6DOF_GY_KALMAN = 1E4F;
+    // gyro offset random walk units (deg/s)^2
+    private static final float FQWB_6DOF_GY_KALMAN = 5E-1F;
     // *********************************************************************************
     // COMPUTE_9DOF_GBY_KALMAN constants
     // *********************************************************************************
@@ -57,6 +74,53 @@ public class Fusion extends Types{
     private static final float FGYRO_OFFSET_MIN_9DOF_GBY_KALMAN =	-5.0F;
     private static final float FGYRO_OFFSET_MAX_9DOF_GBY_KALMAN =	5.0F;
 
+    // function initalizes the 6DOF accel + gyro Kalman filter algorithm
+    static void fInit_6DOF_GY_KALMAN(SV_6DOF_GY_KALMAN pthisSV,  AccelSensor pthisAccel)
+    {
+        int i;				// counter
+
+        // compute and store useful product terms to save floating point calculations later
+        pthisSV.fGyrodeltat = 1.0F / (float) SENSORFS;
+        pthisSV.fAlphaOver2 = 0.5F * FPIOVER180 * (float) OVERSAMPLE_RATIO / (float) SENSORFS;
+        pthisSV.fAlphaOver2Sq = pthisSV.fAlphaOver2 * pthisSV.fAlphaOver2;
+        pthisSV.fAlphaOver2Qwb = pthisSV.fAlphaOver2 * FQWB_6DOF_GY_KALMAN;
+        pthisSV.fAlphaOver2SqQvYQwb = pthisSV.fAlphaOver2Sq * (FQVY_6DOF_GY_KALMAN + FQWB_6DOF_GY_KALMAN);
+
+        // zero the a posteriori gyro offset and error vectors
+        for (i = CHX; i <= CHZ; i++)
+        {
+            pthisSV.fbPl[i] = 0.0F;
+            pthisSV.fqgErrPl[i] = 0.0F;
+            pthisSV.fbErrPl[i] = 0.0F;
+        }
+
+        // initialize the a posteriori orientation state vector to the tilt orientation
+/*        switch (THISCOORDSYSTEM)
+        {
+            case NED:
+                f3DOFTiltNED(pthisSV.fRPl, pthisAccel.fGsAvg);
+                break;
+            case ANDROID:
+                f3DOFTiltAndroid(pthisSV.fRPl, pthisAccel.fGsAvg);
+                break;
+            case WIN8:
+            default:
+                f3DOFTiltWin8(pthisSV.fRPl, pthisAccel.fGsAvg);
+                break;
+        }*/
+        Orientation.f3DOFTiltAndroid(pthisSV.fRPl, pthisAccel.fGsAvg);
+        Orientation.fQuaternionFromRotationMatrix(pthisSV.fRPl, pthisSV.fqPl);
+
+        // update the default quaternion type supported to the most sophisticated
+/*        if (globals.DefaultQuaternionPacketType < Q6AG)
+            globals.QuaternionPacketType = globals.DefaultQuaternionPacketType = Q6AG;*/
+
+        // clear the reset flag
+        pthisSV.resetflag = false;
+
+        //return;
+    } // end fInit_6DOF_GY_KALMAN
+
     static void fInit_9DOF_GBY_KALMAN(SV_9DOF_GBY_KALMAN pthisSV,AccelSensor pthisAccel, MagSensor pthisMag,
                                MagCalibration pthisMagCal)
     {
@@ -65,6 +129,7 @@ public class Fusion extends Types{
         float fQvBQd=0;			// magnetometer noise covariances to geomagnetic sphere
         int i;					// counter
 
+        if(D) Log.d(TAG,"fInit_9DOF_GBY_KALMAN");
         // compute and store useful product terms to save floating point calculations later
         pthisSV.fGyrodeltat = 1.0F / (float) SENSORFS;
         pthisSV.fKalmandeltat = (float) OVERSAMPLE_RATIO / (float) SENSORFS;
@@ -131,6 +196,348 @@ public class Fusion extends Types{
 
     }
 
+    // 6DOF accelerometer+gyroscope orientation function implemented using indirect complementary Kalman filter
+    static void fRun_6DOF_GY_KALMAN( SV_6DOF_GY_KALMAN pthisSV,  AccelSensor pthisAccel,  GyroSensor pthisGyro)
+    {
+        // local scalars and arrays
+        float ftmpMi3x1[] = new float[3];					// temporary vector used for a priori calculations
+        float ftmp3DOF3x1[] = new float[3];				// temporary vector used for 3DOF calculations
+        float ftmpA3x3[][] = new float[3][3];				// scratch 3x3 matrix
+        float fC3x6ik;						// element i, k of measurement matrix C
+        float fC3x6jk;						// element j, k of measurement matrix C
+        float fmodSqGs;						// modulus squared of accelerometer measurement
+        Fquaternion fqMi;			// a priori orientation quaternion
+        Fquaternion ftmpq = new Fquaternion();			// scratch quaternion
+        float ftmp;							// scratch float
+        boolean ierror = false;						// matrix inversion error flag
+        int i, j, k;						// loop counters
+
+        // working arrays for 3x3 matrix inversion
+        float pfRows[][] = new float[3][];
+        int iColInd[] = new int[3];
+        int iRowInd[] = new int[3];
+        int iPivot[] = new int[3];
+
+        // if requested, do a reset initialization with no further processing
+        if (pthisSV.resetflag)
+        {
+            fInit_6DOF_GY_KALMAN(pthisSV, pthisAccel);
+            return;
+        }
+
+        // compute the a priori orientation quaternion fqMi by integrating the buffered gyro measurements
+        fqMi = pthisSV.fqPl;
+        // loop over all the buffered gyroscope measurements
+        for (j = 0; j < OVERSAMPLE_RATIO; j++)
+        {
+            // calculate the instantaneous angular velocity (after subtracting the gyro offset) and rotation vector ftmpMi3x1
+            for (i = CHX; i <= CHZ; i++)
+            {
+                //pthisSV.fOmega[i] = (float)pthisGyro.iYsBuffer[j][i] * pthisGyro.fDegPerSecPerCount - pthisSV.fbPl[i];
+                pthisSV.fOmega[i] = (float)pthisGyro.fYsBuffer[j][i] - pthisSV.fbPl[i];
+                //ftmpMi3x1[i] = pthisSV.fOmega[i] * pthisSV.fGyrodeltat;
+                ftmpMi3x1[i] = pthisSV.fOmega[i];
+            }
+            // convert the rotation vector ftmpMi3x1 to a rotation quaternion ftmpq
+            Orientation.fQuaternionFromRotationVectorDeg(ftmpq, ftmpMi3x1, 1.0F);
+            // integrate the gyro sensor incremental quaternions into the a priori orientation quaternion fqMi
+            Orientation.qAeqAxB(fqMi, ftmpq);
+        }
+
+        // set ftmp3DOF3x1 to the 3DOF gravity vector in the sensor frame
+        fmodSqGs = pthisAccel.fGsAvg[CHX] * pthisAccel.fGsAvg[CHX] + pthisAccel.fGsAvg[CHY] * pthisAccel.fGsAvg[CHY] +
+                pthisAccel.fGsAvg[CHZ] * pthisAccel.fGsAvg[CHZ];
+        if (fmodSqGs != 0.0F)
+        {
+            // normal non-freefall case
+            ftmp = 1.0F / (float) Math.sqrt(Math.abs(fmodSqGs));
+            ftmp3DOF3x1[CHX] = pthisAccel.fGsAvg[CHX] * ftmp;
+            ftmp3DOF3x1[CHY] = pthisAccel.fGsAvg[CHY] * ftmp;
+            ftmp3DOF3x1[CHZ] = pthisAccel.fGsAvg[CHZ] * ftmp;
+        }
+        else
+        {
+            // use zero tilt in case of freefall
+            ftmp3DOF3x1[CHX] = 0.0F;
+            ftmp3DOF3x1[CHY] = 0.0F;
+            ftmp3DOF3x1[CHZ] = 1.0F;
+        }
+
+        // correct accelerometer gravity vector for different coordinate systems
+/*        switch (THISCOORDSYSTEM)
+        {
+            case NED:
+                // +1g in accelerometer z axis (z down) when PCB is flat so no correction needed
+                break;
+            case ANDROID:
+                // +1g in accelerometer z axis (z up) when PCB is flat so negate the vector to obtain gravity
+                ftmp3DOF3x1[CHX] = -ftmp3DOF3x1[CHX];
+                ftmp3DOF3x1[CHY] = -ftmp3DOF3x1[CHY];
+                ftmp3DOF3x1[CHZ] = -ftmp3DOF3x1[CHZ];
+                break;
+            case WIN8:
+            default:
+                // -1g in accelerometer z axis (z up) when PCB is flat so no correction needed
+                break;
+        }*/
+        // +1g in accelerometer z axis (z up) when PCB is flat so negate the vector to obtain gravity
+        ftmp3DOF3x1[CHX] = -ftmp3DOF3x1[CHX];
+        ftmp3DOF3x1[CHY] = -ftmp3DOF3x1[CHY];
+        ftmp3DOF3x1[CHZ] = -ftmp3DOF3x1[CHZ];
+
+        // set ftmpMi3x1 to the a priori gravity vector in the sensor frame from the a priori quaternion
+        ftmpMi3x1[CHX] = 2.0F * (fqMi.q1 * fqMi.q3 - fqMi.q0 * fqMi.q2);
+        ftmpMi3x1[CHY] = 2.0F * (fqMi.q2 * fqMi.q3 + fqMi.q0 * fqMi.q1);
+        ftmpMi3x1[CHZ] = 2.0F * (fqMi.q0 * fqMi.q0 + fqMi.q3 * fqMi.q3) - 1.0F;
+
+        // correct a priori gravity vector for different coordinate systems
+/*        switch (THISCOORDSYSTEM)
+        {
+            case NED:
+                // z axis is down (NED) so no correction needed
+                break;
+            case ANDROID:
+            case WIN8:
+            default:
+                // z axis is up (ENU) so no negate the vector to obtain gravity
+                ftmpMi3x1[CHX] = -ftmpMi3x1[CHX];
+                ftmpMi3x1[CHY] = -ftmpMi3x1[CHY];
+                ftmpMi3x1[CHZ] = -ftmpMi3x1[CHZ];
+                break;
+        }*/
+        // calculate the rotation quaternion between 3DOF and a priori gravity vectors (ignored minus signs cancel here)
+        // and copy the quaternion vector components to the measurement error vector fZErr
+        Orientation.fveqconjgquq(ftmpq, ftmp3DOF3x1, ftmpMi3x1);
+        pthisSV.fZErr[CHX] = ftmpq.q1;
+        pthisSV.fZErr[CHY] = ftmpq.q2;
+        pthisSV.fZErr[CHZ] = ftmpq.q3;
+
+        // update Qw using the a posteriori error vectors from the previous iteration.
+        // as Qv increases or Qw decreases, K . 0 and the Kalman filter is weighted towards the a priori prediction
+        // as Qv decreases or Qw increases, KC . I and the Kalman filter is weighted towards the measurement.
+        // initialize Qw to all zeroes
+        for (i = 0; i < 6; i++)
+            for (j = 0; j < 6; j++)
+                pthisSV.fQw6x6[i][j] = 0.0F;
+        // partial diagonal gyro offset terms
+        pthisSV.fQw6x6[3][3] = pthisSV.fbErrPl[CHX] * pthisSV.fbErrPl[CHX];
+        pthisSV.fQw6x6[4][4] = pthisSV.fbErrPl[CHY] * pthisSV.fbErrPl[CHY];
+        pthisSV.fQw6x6[5][5] = pthisSV.fbErrPl[CHZ] * pthisSV.fbErrPl[CHZ];
+        // diagonal gravity vector components
+        pthisSV.fQw6x6[0][0] = pthisSV.fqgErrPl[CHX] * pthisSV.fqgErrPl[CHX] + pthisSV.fAlphaOver2SqQvYQwb +
+                pthisSV.fAlphaOver2Sq * pthisSV.fQw6x6[3][3];
+        pthisSV.fQw6x6[1][1] = pthisSV.fqgErrPl[CHY] * pthisSV.fqgErrPl[CHY] + pthisSV.fAlphaOver2SqQvYQwb +
+                pthisSV.fAlphaOver2Sq * pthisSV.fQw6x6[4][4];
+        pthisSV.fQw6x6[2][2] = pthisSV.fqgErrPl[CHZ] * pthisSV.fqgErrPl[CHZ] + pthisSV.fAlphaOver2SqQvYQwb +
+                pthisSV.fAlphaOver2Sq * pthisSV.fQw6x6[5][5];
+        // remaining diagonal gyro offset components
+        pthisSV.fQw6x6[3][3] += FQWB_6DOF_GY_KALMAN;
+        pthisSV.fQw6x6[4][4] += FQWB_6DOF_GY_KALMAN;
+        pthisSV.fQw6x6[5][5] += FQWB_6DOF_GY_KALMAN;
+        // off diagonal gravity and gyro offset components
+        pthisSV.fQw6x6[0][3] = pthisSV.fQw6x6[3][0] = pthisSV.fqgErrPl[CHX] * pthisSV.fbErrPl[CHX] - pthisSV.fAlphaOver2Qwb;
+        pthisSV.fQw6x6[1][4] = pthisSV.fQw6x6[4][1] = pthisSV.fqgErrPl[CHY] * pthisSV.fbErrPl[CHY] - pthisSV.fAlphaOver2Qwb;
+        pthisSV.fQw6x6[2][5] = pthisSV.fQw6x6[5][2] = pthisSV.fqgErrPl[CHZ] * pthisSV.fbErrPl[CHZ] - pthisSV.fAlphaOver2Qwb;
+
+        // calculate the vector fQv containing the diagonal elements of the measurement covariance matrix Qv
+        pthisSV.fQv = 0.25F * Math.abs(fmodSqGs - 1.0F) + pthisSV.fAlphaOver2SqQvYQwb;
+
+        // calculate the 6x3 Kalman gain matrix K = Qw * C^T * inv(C * Qw * C^T + Qv)
+        // set fQwCT6x3 = Qw.C^T where Qw has size 6x6 and C^T has size 6x3
+        for (i = 0; i < 6; i++) // loop over rows
+        {
+            for (j = 0; j < 3; j++) // loop over columns
+            {
+                pthisSV.fQwCT6x3[i][j] = 0.0F;
+                // accumulate matrix sum
+                for (k = 0; k < 6; k++)
+                {
+                    // determine fC3x6[j][k] since the matrix is highly sparse
+                    fC3x6jk = 0.0F;
+                    if (k == j) fC3x6jk = 1.0F;
+                    if (k == (j + 3)) fC3x6jk = -pthisSV.fAlphaOver2;
+                    // accumulate fQwCT6x3[i][j] += Qw6x6[i][k] * C[j][k]
+                    if ((pthisSV.fQw6x6[i][k] != 0.0F) && (fC3x6jk != 0.0F))
+                    {
+                        if (fC3x6jk == 1.0F)
+                            pthisSV.fQwCT6x3[i][j] += pthisSV.fQw6x6[i][k];
+                        else
+                            pthisSV.fQwCT6x3[i][j] += pthisSV.fQw6x6[i][k] * fC3x6jk;
+                    }
+                }
+            }
+        }
+
+        // set symmetric ftmpA3x3 = C.(Qw.C^T) + Qv = C.fQwCT6x3 + Qv
+        for (i = 0; i < 3; i++) // loop over rows
+        {
+            for (j = i; j < 3; j++) // loop over on and above diagonal columns
+            {
+                // zero off diagonal and set diagonal to Qv
+                if (i == j)
+                    ftmpA3x3[i][j] = pthisSV.fQv;
+                else
+                    ftmpA3x3[i][j] = 0.0F;
+                // accumulate matrix sum
+                for (k = 0; k < 6; k++)
+                {
+                    // determine fC3x6[i][k]
+                    fC3x6ik = 0.0F;
+                    if (k == i) fC3x6ik = 1.0F;
+                    if (k == (i + 3)) fC3x6ik = -pthisSV.fAlphaOver2;
+
+                    // accumulate ftmpA3x3[i][j] += C[i][k] & fQwCT6x3[k][j]
+                    if ((fC3x6ik != 0.0F) && (pthisSV.fQwCT6x3[k][j] != 0.0F))
+                    {
+                        if (fC3x6ik == 1.0F)
+                            ftmpA3x3[i][j] += pthisSV.fQwCT6x3[k][j];
+                        else
+                            ftmpA3x3[i][j] += fC3x6ik * pthisSV.fQwCT6x3[k][j];
+                    }
+                }
+            }
+        }
+        // set ftmpA3x3 below diagonal elements to above diagonal elements
+        ftmpA3x3[1][0] = ftmpA3x3[0][1];
+        ftmpA3x3[2][0] = ftmpA3x3[0][2];
+        ftmpA3x3[2][1] = ftmpA3x3[1][2];
+
+        // invert ftmpA3x3 in situ to give ftmpA3x3 = inv(C * Qw * C^T + Qv) = inv(ftmpA3x3)
+        //for (i = 0; i < 3; i++)
+            pfRows = ftmpA3x3;
+        Matrix.fmatrixAeqInvA(pfRows, iColInd, iRowInd, iPivot, 3, ierror);
+
+        // on successful inversion set Kalman gain matrix fK6x3 = Qw * C^T * inv(C * Qw * C^T + Qv) = fQwCT6x3 * ftmpA3x3
+        if (!ierror)
+        {
+            // normal case
+            for (i = 0; i < 6; i++) // loop over rows
+            {
+                for (j = 0; j < 3; j++) // loop over columns
+                {
+                    pthisSV.fK6x3[i][j] = 0.0F;
+                    for (k = 0; k < 3; k++)
+                    {
+                        if ((pthisSV.fQwCT6x3[i][k] != 0.0F) && (ftmpA3x3[k][j] != 0.0F))
+                        {
+                            pthisSV.fK6x3[i][j] += pthisSV.fQwCT6x3[i][k] * ftmpA3x3[k][j];
+                        }
+                    }
+                }
+            }
+        }
+        else
+        {
+            // ftmpA3x3 was singular so set Kalman gain matrix fK6x3 to zero
+            for (i = 0; i < 6; i++) // loop over rows
+            {
+                for (j = 0; j < 3; j++) // loop over columns
+                {
+                    pthisSV.fK6x3[i][j] = 0.0F;
+                }
+            }
+        }
+
+        // calculate the a posteriori gravity and geomagnetic tilt quaternion errors and gyro offset error vector
+        // from the Kalman matrix fK6x3 and from the measurement error vector fZErr.
+        for (i = CHX; i <= CHZ; i++)
+        {
+            // gravity tilt vector error component
+            if (pthisSV.fK6x3[i][CHX] != 0.0F)
+                pthisSV.fqgErrPl[i] = pthisSV.fK6x3[i][CHX] * pthisSV.fZErr[CHX];
+            else
+                pthisSV.fqgErrPl[i] = 0.0F;
+            if (pthisSV.fK6x3[i][CHY] != 0.0F) pthisSV.fqgErrPl[i] += pthisSV.fK6x3[i][CHY] * pthisSV.fZErr[CHY];
+            if (pthisSV.fK6x3[i][CHZ] != 0.0F) pthisSV.fqgErrPl[i] += pthisSV.fK6x3[i][CHZ] * pthisSV.fZErr[CHZ];
+
+            // gyro offset vector error component
+            if (pthisSV.fK6x3[i + 3][CHX] != 0.0F)
+                pthisSV.fbErrPl[i] = pthisSV.fK6x3[i + 3][CHX] * pthisSV.fZErr[CHX];
+            else
+                pthisSV.fbErrPl[i] = 0.0F;
+            if (pthisSV.fK6x3[i + 3][CHY] != 0.0F) pthisSV.fbErrPl[i] += pthisSV.fK6x3[i + 3][CHY] * pthisSV.fZErr[CHY];
+            if (pthisSV.fK6x3[i + 3][CHZ] != 0.0F) pthisSV.fbErrPl[i] += pthisSV.fK6x3[i + 3][CHZ] * pthisSV.fZErr[CHZ];
+        }
+
+        // set ftmpq to the gravity tilt correction (conjugate) quaternion
+        ftmpq.q1 = -pthisSV.fqgErrPl[CHX];
+        ftmpq.q2 = -pthisSV.fqgErrPl[CHY];
+        ftmpq.q3 = -pthisSV.fqgErrPl[CHZ];
+        ftmp = ftmpq.q1 * ftmpq.q1 + ftmpq.q2 * ftmpq.q2 + ftmpq.q3 * ftmpq.q3;
+        // determine the scalar component q0
+        if (ftmp <= 1.0F)
+        {
+            // normal case
+            ftmpq.q0 = (float) Math.sqrt(Math.abs(1.0F - ftmp));
+        }
+        else
+        {
+            // if vector component exceeds unity then rounding errors are present at 180 deg rotation
+            // so set scalar component to zero for 180 deg rotation about the rotation vector
+            ftmpq.q0 = 0.0F;
+        }
+        // apply the gravity tilt correction quaternion so fqPl = fqMi.(fqgErrPl)* = fqMi.ftmpq and normalize
+        Orientation.qAeqBxC(pthisSV.fqPl, fqMi, ftmpq);
+
+        // normalize the a posteriori quaternion and compute the a posteriori rotation matrix and rotation vector
+        Orientation.fqAeqNormqA(pthisSV.fqPl);
+        Orientation.fRotationMatrixFromQuaternion(pthisSV.fRPl, pthisSV.fqPl);
+        Orientation.fRotationVectorDegFromQuaternion(pthisSV.fqPl, pthisSV.fRVecPl);
+
+        // update the a posteriori gyro offset vector: b+[k] = b-[k] - be+[k] = b+[k] - be+[k] (deg/s)
+        for (i = CHX; i <= CHZ; i++)
+            pthisSV.fbPl[i] -= pthisSV.fbErrPl[i];
+
+        // compute the linear acceleration in the global frame
+        // de-rotate the accelerometer from the sensor to global frame using the transpose (inverse) of the orientation matrix
+        pthisSV.fAccGl[CHX] = pthisSV.fRPl[CHX][CHX] * pthisAccel.fGsAvg[CHX] + pthisSV.fRPl[CHY][CHX] * pthisAccel.fGsAvg[CHY] +
+                pthisSV.fRPl[CHZ][CHX] * pthisAccel.fGsAvg[CHZ];
+        pthisSV.fAccGl[CHY] = pthisSV.fRPl[CHX][CHY] * pthisAccel.fGsAvg[CHX] + pthisSV.fRPl[CHY][CHY] * pthisAccel.fGsAvg[CHY] +
+                pthisSV.fRPl[CHZ][CHY] * pthisAccel.fGsAvg[CHZ];
+        pthisSV.fAccGl[CHZ] = pthisSV.fRPl[CHX][CHZ] * pthisAccel.fGsAvg[CHX] + pthisSV.fRPl[CHY][CHZ] * pthisAccel.fGsAvg[CHY] +
+                pthisSV.fRPl[CHZ][CHZ] * pthisAccel.fGsAvg[CHZ];
+        // sutract the fixed gravity vector in the global frame leaving linear acceleration
+/*        switch (THISCOORDSYSTEM)
+        {
+            case NED:
+                // gravity positive NED
+                pthisSV.fAccGl[CHX] = -pthisSV.fAccGl[CHX];
+                pthisSV.fAccGl[CHY] = -pthisSV.fAccGl[CHY];
+                pthisSV.fAccGl[CHZ] = -(pthisSV.fAccGl[CHZ] - 1.0F);
+                break;
+            case ANDROID:
+                // acceleration positive ENU
+                pthisSV.fAccGl[CHZ] = pthisSV.fAccGl[CHZ] - 1.0F;
+                break;
+            case WIN8:
+            default:
+                // gravity positive ENU
+                pthisSV.fAccGl[CHX] = -pthisSV.fAccGl[CHX];
+                pthisSV.fAccGl[CHY] = -pthisSV.fAccGl[CHY];
+                pthisSV.fAccGl[CHZ] = -(pthisSV.fAccGl[CHZ] + 1.0F);
+                break;
+        }*/
+        // acceleration positive ENU
+        pthisSV.fAccGl[CHZ] = pthisSV.fAccGl[CHZ] - 1.0F;
+        // compute the a posteriori Euler angles from the a posteriori orientation matrix fRPl
+/*        switch (THISCOORDSYSTEM)
+        {
+            case NED:
+                fNEDAnglesDegFromRotationMatrix(pthisSV.fRPl, &(pthisSV.fPhiPl), &(pthisSV.fThePl), &(pthisSV.fPsiPl), &(pthisSV.fRhoPl), &(pthisSV.fChiPl));
+                break;
+            case ANDROID:
+                fAndroidAnglesDegFromRotationMatrix(pthisSV.fRPl, &(pthisSV.fPhiPl), &(pthisSV.fThePl), &(pthisSV.fPsiPl), &(pthisSV.fRhoPl), &(pthisSV.fChiPl));
+                break;
+            case WIN8:
+            default:
+                fWin8AnglesDegFromRotationMatrix(pthisSV.fRPl, &(pthisSV.fPhiPl), &(pthisSV.fThePl), &(pthisSV.fPsiPl), &(pthisSV.fRhoPl), &(pthisSV.fChiPl));
+                break;
+        }*/
+        Orientation.fAndroidAnglesDegFromRotationMatrix(pthisSV.fRPl,pthisSV.fPhiPl, pthisSV.fThePl, pthisSV.fPsiPl,
+                pthisSV.fRhoPl, pthisSV.fChiPl);
+
+        //return;
+    } // end fRun_6DOF_GY_KALMAN
     // 9DOF accelerometer+magnetometer+gyroscope orientation function implemented using indirect complementary Kalman filter
     static void fRun_9DOF_GBY_KALMAN(SV_9DOF_GBY_KALMAN pthisSV, AccelSensor pthisAccel, MagSensor pthisMag,
                               GyroSensor pthisGyro, MagCalibration pthisMagCal)
@@ -166,7 +573,7 @@ public class Fusion extends Types{
             fInit_9DOF_GBY_KALMAN(pthisSV, pthisAccel, pthisMag, pthisMagCal);
             return;
         }
-
+        if(D) Log.d(TAG,"fRun_9DOF_GBY_KALMAN");
         // compute the a priori orientation quaternion fqMi by integrating the buffered gyro measurements
         fqMi = pthisSV.fqPl;
         // loop over all the buffered gyroscope measurements
@@ -175,8 +582,10 @@ public class Fusion extends Types{
             // calculate the instantaneous angular velocity (after subtracting the gyro offset) and rotation vector ftmpMi3x1
             for (i = CHX; i <= CHZ; i++)
             {
-                pthisSV.fOmega[i] = (float)pthisGyro.iYsBuffer[j][i] * pthisGyro.fDegPerSecPerCount - pthisSV.fbPl[i];
-                ftmpMi3x1[i] = pthisSV.fOmega[i] * pthisSV.fGyrodeltat;
+                //pthisSV.fOmega[i] = (float)pthisGyro.iYsBuffer[j][i] * pthisGyro.fDegPerSecPerCount - pthisSV.fbPl[i];
+                pthisSV.fOmega[i] = (float)pthisGyro.fYsBuffer[j][i] - pthisSV.fbPl[i];
+                //ftmpMi3x1[i] = pthisSV.fOmega[i] * pthisSV.fGyrodeltat;
+                ftmpMi3x1[i] = pthisSV.fOmega[i]; //* pthisSV.fGyrodeltat
             }
             // convert the rotation vector ftmpMi3x1 to a rotation quaternion ftmpq
             Orientation.fQuaternionFromRotationVectorDeg(ftmpq, ftmpMi3x1, 1.0F);
@@ -213,7 +622,7 @@ public class Fusion extends Types{
         // a priori and a posteriori orientation to the 6DOF eCompass orientation.
         // also initialize the geomagnetic inclination angle Delta now that a magnetic calibration has been achieved and a
         // reasonable estimate is available for the first time.
-        if (pthisMagCal.iValidMagCal && !pthisSV.iFirstAccelMagLock)
+        if ((pthisMagCal.iValidMagCal != 0) && !pthisSV.iFirstAccelMagLock)
         {
             fqMi = pthisSV.fqPl = fq6DOF;
             Matrix.f3x3matrixAeqB(fRMi, fR6DOF);
@@ -622,6 +1031,9 @@ public class Fusion extends Types{
 
         //return;
     } // end fRun_9DOF_GBY_KALMAN
+
+
+
 
 
 }

@@ -425,11 +425,13 @@ public class MotionXYChartBuilder extends Activity {
                     case 8:{
                         UsedFusion = true;
                         sm.registerListener(myAccelerometerListener, sm.getDefaultSensor(Sensor.TYPE_ACCELEROMETER), SensorDelay);
-                        sm.registerListener(myAccelerometerListener, sm.getDefaultSensor(Sensor.TYPE_MAGNETIC_FIELD), SensorDelay);
+                        if(fusiontask.EnableMag)
+                            sm.registerListener(myAccelerometerListener, sm.getDefaultSensor(Sensor.TYPE_MAGNETIC_FIELD), SensorDelay);
                         sm.registerListener(myAccelerometerListener, sm.getDefaultSensor(Sensor.TYPE_GYROSCOPE), SensorDelay);
                         magneticFieldValues = null;
                         accelerometerValues = null;
                         GyroscopeValues = null;
+                        fusiontask.Fusion_task_init();
                         break;
                     }
                     default:
@@ -1073,28 +1075,53 @@ public class MotionXYChartBuilder extends Activity {
             }
             if(UsedFusion)
             {
-                if(accelerometerValues != null && magneticFieldValues != null
-                        && GyroscopeValues != null){
-                    String str1 = "accel = "+accelerometerValues[0] + "=="+accelerometerValues[1]
-                            + "=="+accelerometerValues[2] + "\n";
+                if(fusiontask.EnableMag){
+                    if(accelerometerValues != null && magneticFieldValues != null
+                            && GyroscopeValues != null){
+                        String str1 = "accel = "+accelerometerValues[0] + "=="+accelerometerValues[1]
+                                + "=="+accelerometerValues[2] + "\n";
 
-                    String str2 = "mag = "+magneticFieldValues[0] + "=="+magneticFieldValues[1]
-                            + "2="+magneticFieldValues[2] + "\n";
-                    String str3 = "Gyro = "+GyroscopeValues[0] + "=="+GyroscopeValues[1]
-                            + "=="+GyroscopeValues[2] + "\n";
-                    if(M) Log.d(TAG, str1 + str2 + str3);
-                    fusiontask.Fusion_Task((int [])accelerometerValues,magneticFieldValues,GyroscopeValues);
+                        String str2 = "mag = "+magneticFieldValues[0] + "=="+magneticFieldValues[1]
+                                + "2="+magneticFieldValues[2] + "\n";
+                        String str3 = "Gyro = "+GyroscopeValues[0] + "=="+GyroscopeValues[1]
+                                + "=="+GyroscopeValues[2] + "\n";
+                        //if(M) Log.d(TAG, str1 + str2 + str3);
+                        if(fusiontask.Fusion_Task(accelerometerValues,magneticFieldValues,GyroscopeValues))
+                        {
+                            str1 = "liner accel = "+fusiontask.thisSV_9DOF_GBY_KALMAN.fAccGl[0] + "=="+fusiontask.thisSV_9DOF_GBY_KALMAN.fAccGl[1]
+                                    + "=="+fusiontask.thisSV_9DOF_GBY_KALMAN.fAccGl[2] + "\n";
+                            str2 = "roll = "+fusiontask.thisSV_9DOF_GBY_KALMAN.fPhiPl + "pitch="+fusiontask.thisSV_9DOF_GBY_KALMAN.fThePl
+                                    + "yaw="+fusiontask.thisSV_9DOF_GBY_KALMAN.fPsiPl+"compass="+fusiontask.thisSV_9DOF_GBY_KALMAN.fRhoPl+ "\n";
 
-                    SV_9DOF_GBY_KALMAN thisSV;
-                    thisSV = fusiontask.thisSV_9DOF_GBY_KALMAN;
-                    thisSV.fAccGl[0]
+                            if(M) Log.d(TAG, str1 + str2);
+                        }
+                        magneticFieldValues = null;
+                        accelerometerValues = null;
+                        GyroscopeValues = null;
+                    }
+                }else {
+                    if(accelerometerValues != null && GyroscopeValues != null){
+                        String str1 = "accel = "+accelerometerValues[0] + "=="+accelerometerValues[1]
+                                + "=="+accelerometerValues[2] + "\n";
 
-                    magneticFieldValues = null;
-                    accelerometerValues = null;
-                    GyroscopeValues = null;
+                        String str2 ;
+                        String str3 = "Gyro = "+GyroscopeValues[0] + "=="+GyroscopeValues[1]
+                                + "=="+GyroscopeValues[2] + "\n";
+                        if(fusiontask.Fusion_Task(accelerometerValues,magneticFieldValues,GyroscopeValues))
+                        {
+                            str1 = "liner accel = "+fusiontask.thisSV_6DOF_GY_KALMAN.fAccGl[0] + "=="+fusiontask.thisSV_6DOF_GY_KALMAN.fAccGl[1]
+                                    + "=="+fusiontask.thisSV_6DOF_GY_KALMAN.fAccGl[2] + "\n";
+                            str2 = "roll = "+fusiontask.thisSV_6DOF_GY_KALMAN.fPhiPl + "pitch="+fusiontask.thisSV_6DOF_GY_KALMAN.fThePl
+                                    + "yaw="+fusiontask.thisSV_6DOF_GY_KALMAN.fPsiPl+"compass="+fusiontask.thisSV_6DOF_GY_KALMAN.fRhoPl+ "\n";
 
+                            if(M) Log.d(TAG, str1 + str2);
+                        }
+                        accelerometerValues = null;
+                        GyroscopeValues = null;
 
+                    }
                 }
+
 
             }
 

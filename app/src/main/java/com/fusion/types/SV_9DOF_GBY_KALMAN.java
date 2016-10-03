@@ -12,12 +12,12 @@ public class SV_9DOF_GBY_KALMAN extends Fquaternion{
     public float fRhoPl;						// compass (deg)
     public float fChiPl;						// tilt from vertical (deg)
     public float fRPl[][] = new float[3][3];					// a posteriori orientation matrix
-    public Fquaternion fqPl;			// a posteriori orientation quaternion
+    public Fquaternion fqPl = new Fquaternion();			// a posteriori orientation quaternion
     public float fRVecPl[] = new float[3];					// rotation vector
     public float fOmega[] = new float[3];					// average angular velocity (deg/s)
     public int systick;						// systick timer;
                  // end: elements common to all motion state vectors
-    public float fQw10x10[][] = new float[10][7];				// covariance matrix Qw
+    public float fQw10x10[][] = new float[10][10];				// covariance matrix Qw
     public float fK10x7[][] = new float[10][7];				// kalman filter gain matrix K
     public float fQwCT10x7[][] = new float[10][7];				// Qw.C^T matrix
     public float fZErr[] = new float[7];						// measurement error vector
