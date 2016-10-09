@@ -1,6 +1,9 @@
 package com.fusion;
 
+import android.util.Log;
+
 import com.fusion.types.Fquaternion;
+import com.fusion.types.SV_6DOF_GY_KALMAN;
 import com.fusion.types.Types;
 
 // Copyright (c) 2014, 2015, Freescale Semiconductor, Inc.
@@ -36,7 +39,8 @@ import com.fusion.types.Types;
 
 public class Orientation extends Types{
 
-
+    private static boolean D = true;
+    private static String TAG = "Orientation";
     // compile time constants that are private to this file
     private static final float SMALLQ0 = 0.01F;		// limit of quaternion scalar component requiring special algorithm
     private static final float CORRUPTQUAT = 0.001F;	// threshold for deciding rotation quaternion is corrupt
@@ -229,7 +233,7 @@ public class Orientation extends Types{
         //return;
     }
 
-    // extract the Android angles in degrees from the Android rotation matrix
+/*    // extract the Android angles in degrees from the Android rotation matrix
     static void fAndroidAnglesDegFromRotationMatrix(float R[][], float pfPhiDeg, float pfTheDeg, float pfPsiDeg,
                                              float pfRhoDeg, float pfChiDeg)
     {
@@ -281,9 +285,64 @@ public class Orientation extends Types{
         // calculate the tilt angle from vertical Chi (0 <= Chi <= 180 deg)
         pfChiDeg = (float) Math.toDegrees(Math.acos(R[CHZ][CHZ]));
 
+        if(D) Log.d(TAG, "roll = "+ pfPhiDeg + "pitch="+pfTheDeg + "yaw="+pfPsiDeg+"compass="+pfRhoDeg+ "\n");
+
+        //return;
+    }*/
+    static void fAndroidAnglesDegFromRotationMatrix(float R[][], float pDeg[])
+    {
+        // calculate the roll angle -90.0 <= Phi <= 90.0 deg
+        pDeg[0] = (float)Math.toDegrees(Math.asin(R[CHX][CHZ]));
+
+        // calculate the pitch angle -180.0 <= The < 180.0 deg
+        pDeg[1] = (float) Math.toDegrees(Math.atan2(-R[CHY][CHZ], R[CHZ][CHZ]));
+
+        // map +180 pitch onto the functionally equivalent -180 deg pitch
+        if (pDeg[1] == 180.0F)
+        {
+            pDeg[1] = -180.0F;
+        }
+
+        // calculate the yaw (compass) angle 0.0 <= Psi < 360.0 deg
+        if (pDeg[0] == 90.0F)
+        {
+            // vertical downwards gimbal lock case
+            pDeg[2] = (float) Math.toDegrees(Math.atan2(R[CHY][CHX], R[CHY][CHY])) - pDeg[1];
+        }
+        else if (pDeg[0] == -90.0F)
+        {
+            // vertical upwards gimbal lock case
+            pDeg[2] = (float) Math.toDegrees(Math.atan2(R[CHY][CHX], R[CHY][CHY])) + pDeg[1];
+        }
+        else
+        {
+            // general case
+            pDeg[2] = (float) Math.toDegrees(Math.atan2(-R[CHX][CHY], R[CHX][CHX]));
+        }
+
+        // map yaw angle Psi onto range 0.0 <= Psi < 360.0 deg
+        if (pDeg[2] < 0.0F)
+        {
+            pDeg[2] += 360.0F;
+        }
+
+        // check for rounding errors mapping small negative angle to 360 deg
+        if (pDeg[2] >= 360.0F)
+        {
+            pDeg[2] = 0.0F;
+        }
+
+        // the compass heading angle Rho equals the yaw angle Psi
+        // this definition is compliant with Motorola Xoom tablet behavior
+        pDeg[3] = pDeg[2];
+
+        // calculate the tilt angle from vertical Chi (0 <= Chi <= 180 deg)
+        pDeg[4] = (float) Math.toDegrees(Math.acos(R[CHZ][CHZ]));
+
+        //if(D) Log.d(TAG, "roll = "+ pDeg[0] + "pitch="+pDeg[1] + "yaw="+pDeg[2]+"compass="+pDeg[3]+ "\n");
+
         //return;
     }
-
     // computes normalized rotation quaternion from a rotation vector (deg)
     static void fQuaternionFromRotationVectorDeg(Fquaternion pq, float rvecdeg[], float fscaling)
     {
@@ -319,7 +378,6 @@ public class Orientation extends Types{
             // use exact calculation
             sinhalfeta = (float) Math.sin(0.5F * fetarad);
         }
-
         // compute the vector quaternion components q1, q2, q3
         if (fetadeg != 0.0F)
         {
@@ -348,7 +406,7 @@ public class Orientation extends Types{
             // rounding errors are present
             pq.q0 = 0.0F;
         }
-
+        if(D) Log.d(TAG,"q0="+pq.q0+"q1="+pq.q1+"q2="+pq.q2+"q3="+pq.q3);
         //return;
     }
 
@@ -549,7 +607,7 @@ public class Orientation extends Types{
     }
 
     // function computes the rotation quaternion that rotates unit vector u onto unit vector v as v=q*.u.q
-// using q = 1/sqrt(2) * {sqrt(1 + u.v) - u x v / sqrt(1 + u.v)}
+    // using q = 1/sqrt(2) * {sqrt(1 + u.v) - u x v / sqrt(1 + u.v)}
     static void fveqconjgquq(Fquaternion pfq, float fu[], float fv[])
     {
         float fuxv[] = new float[3];				// vector product u x v

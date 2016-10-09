@@ -9,9 +9,14 @@ public class Types {
     // sampling rate and kalman filter timing eg (25, 1), (200, 8), (400, 16), (500, 20), (600, 24), (800, 32)
     // the MULTI-(B) 9-AXIS and AGM01 boards are able to sample the gyro sensor at 800Hz with Kalman filter rates depending
     // on the processor speed and number of algorithms executing in parallel.
-    public static final int SENSORFS          = 200;         // int32: frequency (Hz) of gyro sensor sampling process
-    public static final int OVERSAMPLE_RATIO  =	8;			// int32: accel and mag sampling and algorithms run at SENSORFS / OVERSAMPLE_RATIO Hz
+    public static final int SENSORFS          = 30;         // int32: frequency (Hz) of gyro sensor sampling process
+    public static final int OVERSAMPLE_RATIO  =	2;			// int32: accel and mag sampling and algorithms run at SENSORFS / OVERSAMPLE_RATIO Hz
 
+    // coordinate system for the build
+    public static final int NED = 0;                       // identifier for NED (Aerospace) axes and angles
+    public static final int ANDROID = 1;                   // identifier for Android axes and angles
+    public static final int WIN8 = 2;						// identifier for Windows 8 axes and angles
+    public static final int THISCOORDSYSTEM = ANDROID;			// the coordinate system to be used
     // the quaternion type to be transmitted
     public enum quaternion {Q3, Q3M, Q3G, Q6MA, Q6AG, Q9};
 

@@ -78,7 +78,7 @@ public class Fusion extends Types{
     static void fInit_6DOF_GY_KALMAN(SV_6DOF_GY_KALMAN pthisSV,  AccelSensor pthisAccel)
     {
         int i;				// counter
-
+        if(D) Log.d(TAG,"fInit_6DOF_GY_KALMAN");
         // compute and store useful product terms to save floating point calculations later
         pthisSV.fGyrodeltat = 1.0F / (float) SENSORFS;
         pthisSV.fAlphaOver2 = 0.5F * FPIOVER180 * (float) OVERSAMPLE_RATIO / (float) SENSORFS;
@@ -95,20 +95,20 @@ public class Fusion extends Types{
         }
 
         // initialize the a posteriori orientation state vector to the tilt orientation
-/*        switch (THISCOORDSYSTEM)
+        switch (THISCOORDSYSTEM)
         {
             case NED:
-                f3DOFTiltNED(pthisSV.fRPl, pthisAccel.fGsAvg);
+                //f3DOFTiltNED(pthisSV.fRPl, pthisAccel.fGsAvg);
                 break;
             case ANDROID:
-                f3DOFTiltAndroid(pthisSV.fRPl, pthisAccel.fGsAvg);
+                Orientation.f3DOFTiltAndroid(pthisSV.fRPl, pthisAccel.fGsAvg);
                 break;
             case WIN8:
             default:
-                f3DOFTiltWin8(pthisSV.fRPl, pthisAccel.fGsAvg);
+                //f3DOFTiltWin8(pthisSV.fRPl, pthisAccel.fGsAvg);
                 break;
-        }*/
-        Orientation.f3DOFTiltAndroid(pthisSV.fRPl, pthisAccel.fGsAvg);
+        }
+
         Orientation.fQuaternionFromRotationMatrix(pthisSV.fRPl, pthisSV.fqPl);
 
         // update the default quaternion type supported to the most sophisticated
@@ -158,24 +158,23 @@ public class Fusion extends Types{
 
         // initialize the posteriori orientation state vector to the instantaneous eCompass orientation
         pthisSV.iFirstAccelMagLock = false;
-/*        switch (THISCOORDSYSTEM)
+        switch (THISCOORDSYSTEM)
         {
             case NED:
-                fLeastSquareseCompassNED(&(pthisSV.fqPl), pthisMagCal.fB, pthisSV.fDeltaPl, pthisSV.fsinDeltaPl,
-                        pthisSV.fcosDeltaPl, &fDelta6DOF, pthisMag.fBcAvg, pthisAccel.fGsAvg, &fQvBQd, &pfQvGQa);
+/*                fLeastSquareseCompassNED(&(pthisSV.fqPl), pthisMagCal.fB, pthisSV.fDeltaPl, pthisSV.fsinDeltaPl,
+                        pthisSV.fcosDeltaPl, &fDelta6DOF, pthisMag.fBcAvg, pthisAccel.fGsAvg, &fQvBQd, &pfQvGQa);*/
                 break;
             case ANDROID:
-                fLeastSquareseCompassAndroid(&(pthisSV.fqPl), pthisMagCal.fB, pthisSV.fDeltaPl, pthisSV.fsinDeltaPl,
-                        pthisSV.fcosDeltaPl, &fDelta6DOF, pthisMag.fBcAvg, pthisAccel.fGsAvg, &fQvBQd, &pfQvGQa);
+                Orientation.fLeastSquareseCompassAndroid(pthisSV.fqPl, pthisMagCal.fB, pthisSV.fDeltaPl, pthisSV.fsinDeltaPl,
+                        pthisSV.fcosDeltaPl, fDelta6DOF, pthisMag.fBcAvg, pthisAccel.fGsAvg, fQvBQd, pfQvGQa);
                 break;
             case WIN8:
             default:
-                fLeastSquareseCompassWin8(&(pthisSV.fqPl), pthisMagCal.fB, pthisSV.fDeltaPl, pthisSV.fsinDeltaPl,
-                        pthisSV.fcosDeltaPl, &fDelta6DOF, pthisMag.fBcAvg, pthisAccel.fGsAvg, &fQvBQd, &pfQvGQa);
+/*                fLeastSquareseCompassWin8(&(pthisSV.fqPl), pthisMagCal.fB, pthisSV.fDeltaPl, pthisSV.fsinDeltaPl,
+                        pthisSV.fcosDeltaPl, &fDelta6DOF, pthisMag.fBcAvg, pthisAccel.fGsAvg, &fQvBQd, &pfQvGQa);*/
                 break;
-        }*/
-        Orientation.fLeastSquareseCompassAndroid(pthisSV.fqPl, pthisMagCal.fB, pthisSV.fDeltaPl, pthisSV.fsinDeltaPl,
-                pthisSV.fcosDeltaPl, fDelta6DOF, pthisMag.fBcAvg, pthisAccel.fGsAvg, fQvBQd, pfQvGQa);
+        }
+
         Orientation.fRotationMatrixFromQuaternion(pthisSV.fRPl, pthisSV.fqPl);
 
         // initialize the geomagnetic inclination angle to the estimate from the eCompass call.
@@ -199,6 +198,7 @@ public class Fusion extends Types{
     // 6DOF accelerometer+gyroscope orientation function implemented using indirect complementary Kalman filter
     static void fRun_6DOF_GY_KALMAN( SV_6DOF_GY_KALMAN pthisSV,  AccelSensor pthisAccel,  GyroSensor pthisGyro)
     {
+        if(D) Log.d(TAG,"fRun_6DOF_GY_KALMAN");
         // local scalars and arrays
         float ftmpMi3x1[] = new float[3];					// temporary vector used for a priori calculations
         float ftmp3DOF3x1[] = new float[3];				// temporary vector used for 3DOF calculations
@@ -227,6 +227,7 @@ public class Fusion extends Types{
 
         // compute the a priori orientation quaternion fqMi by integrating the buffered gyro measurements
         fqMi = pthisSV.fqPl;
+        if(D) Log.d(TAG,"fbPl1=" + pthisSV.fbPl[0]+"fbPl1=" + pthisSV.fbPl[1]+ "fbPl1=" + pthisSV.fbPl[2]);
         // loop over all the buffered gyroscope measurements
         for (j = 0; j < OVERSAMPLE_RATIO; j++)
         {
@@ -235,14 +236,18 @@ public class Fusion extends Types{
             {
                 //pthisSV.fOmega[i] = (float)pthisGyro.iYsBuffer[j][i] * pthisGyro.fDegPerSecPerCount - pthisSV.fbPl[i];
                 pthisSV.fOmega[i] = (float)pthisGyro.fYsBuffer[j][i] - pthisSV.fbPl[i];
-                //ftmpMi3x1[i] = pthisSV.fOmega[i] * pthisSV.fGyrodeltat;
-                ftmpMi3x1[i] = pthisSV.fOmega[i];
+                ftmpMi3x1[i] = pthisSV.fOmega[i] * pthisSV.fGyrodeltat;
+                //ftmpMi3x1[i] = pthisSV.fOmega[i];
+                //if(D) Log.d(TAG,"fOmega" + i + "=" + pthisSV.fOmega[i]);
             }
+            //if(D) Log.d(TAG,"fOmega=" + pthisSV.fOmega[0]+"fOmega=" + pthisSV.fOmega[1]+ "fOmega=" + pthisSV.fOmega[2]);
             // convert the rotation vector ftmpMi3x1 to a rotation quaternion ftmpq
             Orientation.fQuaternionFromRotationVectorDeg(ftmpq, ftmpMi3x1, 1.0F);
+            //if(D) Log.d(TAG,"ftmpq q0="+ftmpq.q0+"q1="+ftmpq.q1+"q2="+ftmpq.q2+"q3="+ftmpq.q3);
             // integrate the gyro sensor incremental quaternions into the a priori orientation quaternion fqMi
             Orientation.qAeqAxB(fqMi, ftmpq);
         }
+        if(D) Log.d(TAG,"fqMi.q0=" + fqMi.q0 + "fqMi.q1=" + fqMi.q1 + "fqMi.q2=" + fqMi.q2 + "fqMi.q3=" + fqMi.q3);
 
         // set ftmp3DOF3x1 to the 3DOF gravity vector in the sensor frame
         fmodSqGs = pthisAccel.fGsAvg[CHX] * pthisAccel.fGsAvg[CHX] + pthisAccel.fGsAvg[CHY] * pthisAccel.fGsAvg[CHY] +
@@ -264,7 +269,7 @@ public class Fusion extends Types{
         }
 
         // correct accelerometer gravity vector for different coordinate systems
-/*        switch (THISCOORDSYSTEM)
+        switch (THISCOORDSYSTEM)
         {
             case NED:
                 // +1g in accelerometer z axis (z down) when PCB is flat so no correction needed
@@ -279,11 +284,7 @@ public class Fusion extends Types{
             default:
                 // -1g in accelerometer z axis (z up) when PCB is flat so no correction needed
                 break;
-        }*/
-        // +1g in accelerometer z axis (z up) when PCB is flat so negate the vector to obtain gravity
-        ftmp3DOF3x1[CHX] = -ftmp3DOF3x1[CHX];
-        ftmp3DOF3x1[CHY] = -ftmp3DOF3x1[CHY];
-        ftmp3DOF3x1[CHZ] = -ftmp3DOF3x1[CHZ];
+        }
 
         // set ftmpMi3x1 to the a priori gravity vector in the sensor frame from the a priori quaternion
         ftmpMi3x1[CHX] = 2.0F * (fqMi.q1 * fqMi.q3 - fqMi.q0 * fqMi.q2);
@@ -291,7 +292,7 @@ public class Fusion extends Types{
         ftmpMi3x1[CHZ] = 2.0F * (fqMi.q0 * fqMi.q0 + fqMi.q3 * fqMi.q3) - 1.0F;
 
         // correct a priori gravity vector for different coordinate systems
-/*        switch (THISCOORDSYSTEM)
+        switch (THISCOORDSYSTEM)
         {
             case NED:
                 // z axis is down (NED) so no correction needed
@@ -304,7 +305,7 @@ public class Fusion extends Types{
                 ftmpMi3x1[CHY] = -ftmpMi3x1[CHY];
                 ftmpMi3x1[CHZ] = -ftmpMi3x1[CHZ];
                 break;
-        }*/
+        }
         // calculate the rotation quaternion between 3DOF and a priori gravity vectors (ignored minus signs cancel here)
         // and copy the quaternion vector components to the measurement error vector fZErr
         Orientation.fveqconjgquq(ftmpq, ftmp3DOF3x1, ftmpMi3x1);
@@ -481,13 +482,18 @@ public class Fusion extends Types{
 
         // normalize the a posteriori quaternion and compute the a posteriori rotation matrix and rotation vector
         Orientation.fqAeqNormqA(pthisSV.fqPl);
+        if(D) Log.d(TAG,"fqPl.q0=" + pthisSV.fqPl.q0 + "fqPl.q1=" + pthisSV.fqPl.q1 +
+                "fqPl.q2=" + pthisSV.fqPl.q2 + "fqPl.q3=" + pthisSV.fqPl.q3);
         Orientation.fRotationMatrixFromQuaternion(pthisSV.fRPl, pthisSV.fqPl);
+        if(D) Log.d(TAG,"pthisSV.fRPl=" + pthisSV.fRPl[CHX][CHX] + "pthisSV.fRPl=" + pthisSV.fRPl[CHX][CHY] +
+                "pthisSV.fRPl=" + pthisSV.fRPl[CHX][CHZ]);
         Orientation.fRotationVectorDegFromQuaternion(pthisSV.fqPl, pthisSV.fRVecPl);
 
         // update the a posteriori gyro offset vector: b+[k] = b-[k] - be+[k] = b+[k] - be+[k] (deg/s)
         for (i = CHX; i <= CHZ; i++)
             pthisSV.fbPl[i] -= pthisSV.fbErrPl[i];
 
+        if(D) Log.d(TAG,"fGsAvg0=" + pthisAccel.fGsAvg[CHX] + "fGsAvg1=" + pthisAccel.fGsAvg[CHY] + "fGsAvg2=" + pthisAccel.fGsAvg[CHZ]);
         // compute the linear acceleration in the global frame
         // de-rotate the accelerometer from the sensor to global frame using the transpose (inverse) of the orientation matrix
         pthisSV.fAccGl[CHX] = pthisSV.fRPl[CHX][CHX] * pthisAccel.fGsAvg[CHX] + pthisSV.fRPl[CHY][CHX] * pthisAccel.fGsAvg[CHY] +
@@ -497,7 +503,7 @@ public class Fusion extends Types{
         pthisSV.fAccGl[CHZ] = pthisSV.fRPl[CHX][CHZ] * pthisAccel.fGsAvg[CHX] + pthisSV.fRPl[CHY][CHZ] * pthisAccel.fGsAvg[CHY] +
                 pthisSV.fRPl[CHZ][CHZ] * pthisAccel.fGsAvg[CHZ];
         // sutract the fixed gravity vector in the global frame leaving linear acceleration
-/*        switch (THISCOORDSYSTEM)
+        switch (THISCOORDSYSTEM)
         {
             case NED:
                 // gravity positive NED
@@ -516,26 +522,34 @@ public class Fusion extends Types{
                 pthisSV.fAccGl[CHY] = -pthisSV.fAccGl[CHY];
                 pthisSV.fAccGl[CHZ] = -(pthisSV.fAccGl[CHZ] + 1.0F);
                 break;
-        }*/
-        // acceleration positive ENU
-        pthisSV.fAccGl[CHZ] = pthisSV.fAccGl[CHZ] - 1.0F;
+        }
+        float pDeg[] = new float[5];
         // compute the a posteriori Euler angles from the a posteriori orientation matrix fRPl
-/*        switch (THISCOORDSYSTEM)
+        switch (THISCOORDSYSTEM)
         {
             case NED:
-                fNEDAnglesDegFromRotationMatrix(pthisSV.fRPl, &(pthisSV.fPhiPl), &(pthisSV.fThePl), &(pthisSV.fPsiPl), &(pthisSV.fRhoPl), &(pthisSV.fChiPl));
+/*                fNEDAnglesDegFromRotationMatrix(pthisSV.fRPl, &(pthisSV.fPhiPl), &(pthisSV.fThePl), &(pthisSV.fPsiPl), &(pthisSV.fRhoPl), &(pthisSV.fChiPl));*/
                 break;
             case ANDROID:
+/*
                 fAndroidAnglesDegFromRotationMatrix(pthisSV.fRPl, &(pthisSV.fPhiPl), &(pthisSV.fThePl), &(pthisSV.fPsiPl), &(pthisSV.fRhoPl), &(pthisSV.fChiPl));
+*/
+                Orientation.fAndroidAnglesDegFromRotationMatrix(pthisSV.fRPl,pDeg);
+                pthisSV.fPhiPl = pDeg[0];
+                pthisSV.fThePl = pDeg[1];
+                pthisSV.fPsiPl = pDeg[2];
+                pthisSV.fRhoPl = pDeg[3];
+                pthisSV.fChiPl = pDeg[4];
                 break;
             case WIN8:
             default:
+/*
                 fWin8AnglesDegFromRotationMatrix(pthisSV.fRPl, &(pthisSV.fPhiPl), &(pthisSV.fThePl), &(pthisSV.fPsiPl), &(pthisSV.fRhoPl), &(pthisSV.fChiPl));
+*/
                 break;
-        }*/
-        Orientation.fAndroidAnglesDegFromRotationMatrix(pthisSV.fRPl,pthisSV.fPhiPl, pthisSV.fThePl, pthisSV.fPsiPl,
-                pthisSV.fRhoPl, pthisSV.fChiPl);
+        }
 
+        if(D) Log.d(TAG, "roll = "+pthisSV.fPhiPl + "pitch="+pthisSV.fThePl+ "yaw="+pthisSV.fPsiPl+"compass="+pthisSV.fRhoPl+ "\n");
         //return;
     } // end fRun_6DOF_GY_KALMAN
     // 9DOF accelerometer+magnetometer+gyroscope orientation function implemented using indirect complementary Kalman filter
@@ -597,24 +611,25 @@ public class Fusion extends Types{
 
         // compute the 6DOF least squares orientation quaternion fq6DOF, matrix fR6DOF and inclination angle fDelta6DOF and
         // the squared deviations of the accelerometer and magnetometer measurements from the 1g gravity and geomagnetic spheres.
-/*        switch (THISCOORDSYSTEM)
+        switch (THISCOORDSYSTEM)
         {
             case NED:
-                fLeastSquareseCompassNED(&fq6DOF, pthisMagCal.fB, pthisSV.fDeltaPl, pthisSV.fsinDeltaPl, pthisSV.fcosDeltaPl,
-                &fDelta6DOF, pthisMag.fBcAvg, pthisAccel.fGsAvg, &fQvBQd, &fQvGQa);
+/*                fLeastSquareseCompassNED(&fq6DOF, pthisMagCal.fB, pthisSV.fDeltaPl, pthisSV.fsinDeltaPl, pthisSV.fcosDeltaPl,
+                &fDelta6DOF, pthisMag.fBcAvg, pthisAccel.fGsAvg, &fQvBQd, &fQvGQa);*/
                 break;
             case ANDROID:
-                fLeastSquareseCompassAndroid(&fq6DOF, pthisMagCal.fB, pthisSV.fDeltaPl, pthisSV.fsinDeltaPl, pthisSV.fcosDeltaPl,
-                &fDelta6DOF, pthisMag.fBcAvg, pthisAccel.fGsAvg, &fQvBQd, &fQvGQa);
+/*                fLeastSquareseCompassAndroid(&fq6DOF, pthisMagCal.fB, pthisSV.fDeltaPl, pthisSV.fsinDeltaPl, pthisSV.fcosDeltaPl,
+                &fDelta6DOF, pthisMag.fBcAvg, pthisAccel.fGsAvg, &fQvBQd, &fQvGQa);*/
+                Orientation.fLeastSquareseCompassAndroid(fq6DOF, pthisMagCal.fB, pthisSV.fDeltaPl, pthisSV.fsinDeltaPl, pthisSV.fcosDeltaPl,
+                        fDelta6DOF, pthisMag.fBcAvg, pthisAccel.fGsAvg, fQvBQd, fQvGQa);
                 break;
             case WIN8:
             default:
-                fLeastSquareseCompassWin8(&fq6DOF, pthisMagCal.fB, pthisSV.fDeltaPl, pthisSV.fsinDeltaPl, pthisSV.fcosDeltaPl,
-                &fDelta6DOF, pthisMag.fBcAvg, pthisAccel.fGsAvg, &fQvBQd, &fQvGQa);
+/*                fLeastSquareseCompassWin8(&fq6DOF, pthisMagCal.fB, pthisSV.fDeltaPl, pthisSV.fsinDeltaPl, pthisSV.fcosDeltaPl,
+                &fDelta6DOF, pthisMag.fBcAvg, pthisAccel.fGsAvg, &fQvBQd, &fQvGQa);*/
                 break;
-        }*/
-        Orientation.fLeastSquareseCompassAndroid(fq6DOF, pthisMagCal.fB, pthisSV.fDeltaPl, pthisSV.fsinDeltaPl, pthisSV.fcosDeltaPl,
-                                            fDelta6DOF, pthisMag.fBcAvg, pthisAccel.fGsAvg, fQvBQd, fQvGQa);
+        }
+
         // compute the 6DOF orientation matrix from the 6DOF quaternion.
         Orientation.fRotationMatrixFromQuaternion(fR6DOF, fq6DOF);
 
@@ -648,7 +663,7 @@ public class Fusion extends Types{
         pthisSV.fZErr[2] = ftmpq.q3;
 
         // determine the normalized 6DOF and a priori geomagnetic vectors in the sensor frame.
-/*        switch (THISCOORDSYSTEM)
+        switch (THISCOORDSYSTEM)
         {
             case NED:
                 // set ftmp6DOF3x1 to the normalized 6DOF geomagnetic vector in the sensor frame
@@ -672,15 +687,7 @@ public class Fusion extends Types{
                 ftmpMi3x1[CHY] = fRMi[CHY][CHY] * pthisSV.fcosDeltaPl - fRMi[CHY][CHZ] * pthisSV.fsinDeltaPl;
                 ftmpMi3x1[CHZ] = fRMi[CHZ][CHY] * pthisSV.fcosDeltaPl - fRMi[CHZ][CHZ] * pthisSV.fsinDeltaPl;
                 break;
-        }*/
-        // set ftmp6DOF3x1 to the 6DOF geomagnetic vector in the sensor frame
-        ftmp6DOF3x1[CHX] = fR6DOF[CHX][CHY] * pthisSV.fcosDeltaPl - fR6DOF[CHX][CHZ] * pthisSV.fsinDeltaPl;
-        ftmp6DOF3x1[CHY] = fR6DOF[CHY][CHY] * pthisSV.fcosDeltaPl - fR6DOF[CHY][CHZ] * pthisSV.fsinDeltaPl;
-        ftmp6DOF3x1[CHZ] = fR6DOF[CHZ][CHY] * pthisSV.fcosDeltaPl - fR6DOF[CHZ][CHZ] * pthisSV.fsinDeltaPl;
-        // set ftmpMi3x1 to the a priori geomagnetic vector in the sensor frame
-        ftmpMi3x1[CHX] = fRMi[CHX][CHY] * pthisSV.fcosDeltaPl - fRMi[CHX][CHZ] * pthisSV.fsinDeltaPl;
-        ftmpMi3x1[CHY] = fRMi[CHY][CHY] * pthisSV.fcosDeltaPl - fRMi[CHY][CHZ] * pthisSV.fsinDeltaPl;
-        ftmpMi3x1[CHZ] = fRMi[CHZ][CHY] * pthisSV.fcosDeltaPl - fRMi[CHZ][CHZ] * pthisSV.fsinDeltaPl;
+        }
 
         // set ftmpq to the quaternion that rotates the 6DOF geomagnetic tilt vector to the a priori geomagnetic tilt vector
         // limit to 60 deg rotation and copy the vector components to the measurement error vector fZErr
@@ -978,7 +985,7 @@ public class Fusion extends Types{
         pthisSV.fAccGl[CHZ] = pthisSV.fRPl[CHX][CHZ] * pthisAccel.fGsAvg[CHX] + pthisSV.fRPl[CHY][CHZ] * pthisAccel.fGsAvg[CHY] +
                 pthisSV.fRPl[CHZ][CHZ] * pthisAccel.fGsAvg[CHZ];
         // sutract the fixed gravity vector in the global frame leaving linear acceleration
-/*        switch (THISCOORDSYSTEM)
+        switch (THISCOORDSYSTEM)
         {
             case NED:
                 // gravity positive NED
@@ -997,9 +1004,7 @@ public class Fusion extends Types{
                 pthisSV.fAccGl[CHY] = -pthisSV.fAccGl[CHY];
                 pthisSV.fAccGl[CHZ] = -(pthisSV.fAccGl[CHZ] + 1.0F);
                 break;
-        }*/
-        // acceleration positive ENU
-        pthisSV.fAccGl[CHZ] = pthisSV.fAccGl[CHZ] - 1.0F;
+        }
 
         // integrate the acceleration to velocity and displacement in the global frame.
         // Note: integration errors accumulate without limit over time and this code should only be
@@ -1011,23 +1016,30 @@ public class Fusion extends Types{
             // integrate velocity (in m/s) to displacement (m)
             pthisSV.fDisGl[i] += pthisSV.fVelGl[i] * pthisSV.fKalmandeltat;
         }
-
+        float pfPhiDeg=0,pfTheDeg=0,pfPsiDeg=0,pfRhoDeg=0,pfChiDeg=0;
+        float pDeg[] = new float[5];
         // compute the a posteriori Euler angles from the a posteriori orientation matrix fRPl
-       /*switch (THISCOORDSYSTEM)
+       switch (THISCOORDSYSTEM)
         {
             case NED:
-                fNEDAnglesDegFromRotationMatrix(pthisSV.fRPl, &(pthisSV.fPhiPl), &(pthisSV.fThePl), &(pthisSV.fPsiPl), &(pthisSV.fRhoPl), &(pthisSV.fChiPl));
-                break;
+                /*fNEDAnglesDegFromRotationMatrix(pthisSV.fRPl, &(pthisSV.fPhiPl), &(pthisSV.fThePl), &(pthisSV.fPsiPl), &(pthisSV.fRhoPl), &(pthisSV.fChiPl));
+*/                break;
             case ANDROID:
-                fAndroidAnglesDegFromRotationMatrix(pthisSV.fRPl, &(pthisSV.fPhiPl), &(pthisSV.fThePl), &(pthisSV.fPsiPl), &(pthisSV.fRhoPl), &(pthisSV.fChiPl));
+                /*fAndroidAnglesDegFromRotationMatrix(pthisSV.fRPl, &(pthisSV.fPhiPl), &(pthisSV.fThePl), &(pthisSV.fPsiPl), &(pthisSV.fRhoPl), &(pthisSV.fChiPl));
+               */
+                //Orientation.fAndroidAnglesDegFromRotationMatrix(pthisSV.fRPl,pthisSV);
+                Orientation.fAndroidAnglesDegFromRotationMatrix(pthisSV.fRPl,pDeg);
+                pthisSV.fPhiPl = pDeg[0];
+                pthisSV.fThePl = pDeg[1];
+                pthisSV.fPsiPl = pDeg[2];
+                pthisSV.fRhoPl = pDeg[3];
+                pthisSV.fChiPl = pDeg[4];
                 break;
             case WIN8:
             default:
-                fWin8AnglesDegFromRotationMatrix(pthisSV.fRPl, &(pthisSV.fPhiPl), &(pthisSV.fThePl), &(pthisSV.fPsiPl), &(pthisSV.fRhoPl), &(pthisSV.fChiPl));
-                break;
-        }*/
-
-        Orientation.fAndroidAnglesDegFromRotationMatrix(pthisSV.fRPl,pthisSV.fPhiPl,pthisSV.fThePl,pthisSV.fPsiPl,pthisSV.fRhoPl,pthisSV.fChiPl);
+                /*fWin8AnglesDegFromRotationMatrix(pthisSV.fRPl, &(pthisSV.fPhiPl), &(pthisSV.fThePl), &(pthisSV.fPsiPl), &(pthisSV.fRhoPl), &(pthisSV.fChiPl));
+               */ break;
+        }
 
         //return;
     } // end fRun_9DOF_GBY_KALMAN

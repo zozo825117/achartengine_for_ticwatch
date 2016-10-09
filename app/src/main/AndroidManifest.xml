@@ -23,6 +23,7 @@
         <activity android:name="org.achartengine.chartdemo.demo.chart.ZozoXYChartBuilder"/>
 	    <activity android:name="com.example.achartmotion.MotionXYChartBuilder"
                   android:configChanges="orientation|screenSize"
+                  android:exported="true"
             />
         <activity android:name="org.achartengine.chartdemo.demo.chart.PieChartBuilder" />
         <activity android:name="org.achartengine.GraphicalActivity" />

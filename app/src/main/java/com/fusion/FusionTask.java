@@ -18,7 +18,7 @@ import com.fusion.types.Types;
 
 public class FusionTask extends Types {
 
-     private boolean D = true;
+     private boolean D = false;
      private String TAG = "FusionTask";
 
      public final boolean EnableMag = false;
@@ -80,9 +80,9 @@ public class FusionTask extends Types {
                          fSum[i] += thisAccel.fGsBuffer[j][i];
                     // compute the average with nearest integer rounding
                     if (fSum[i] >= 0)
-                         thisAccel.fGsAvg[i] = ((fSum[i] + (OVERSAMPLE_RATIO >> 1)) / OVERSAMPLE_RATIO);
+                         thisAccel.fGsAvg[i] = ((fSum[i] ) / OVERSAMPLE_RATIO);//+ (OVERSAMPLE_RATIO >> 1)
                     else
-                         thisAccel.fGsAvg[i] = ((fSum[i] - (OVERSAMPLE_RATIO >> 1)) / OVERSAMPLE_RATIO);
+                         thisAccel.fGsAvg[i] = ((fSum[i]) / OVERSAMPLE_RATIO); //- (OVERSAMPLE_RATIO >> 1)
                     // convert from integer counts to float g
                     //thisAccel.fGsAvg[i] = (float)thisAccel.iGsAvg[i] * thisAccel.fgPerCount;
                }
@@ -192,6 +192,7 @@ public class FusionTask extends Types {
      public void Fusion_task_init()
      {
           thisSV_9DOF_GBY_KALMAN.resetflag = true;
+          thisSV_6DOF_GY_KALMAN.resetflag = true;
           RdSensData_task_init();
           if(EnableMag)
                Magnetic.fInitMagCalibration(thisMagCal, thisMagBuffer);
