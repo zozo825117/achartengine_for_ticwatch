@@ -156,7 +156,7 @@ public class MotionXYChartBuilder extends Activity {
     private boolean UsedFusion;
 
 
-     final int SensorDelay = SensorManager.SENSOR_DELAY_FASTEST; //SENSOR_DELAY_UI
+     final int SensorDelay = SensorManager.SENSOR_DELAY_GAME; //SENSOR_DELAY_UI
 
     final  int[] SeriesColor = {
             Color.TRANSPARENT,
@@ -733,23 +733,6 @@ public class MotionXYChartBuilder extends Activity {
         // See https://g.co/AppIndexing/AndroidStudio for more information.
         client = new GoogleApiClient.Builder(this).addApi(AppIndex.API).build();
 
-
-        //test
-        Fquaternion a = new Fquaternion();
-        Fquaternion b = new Fquaternion();
-        a.q0 = 1;
-        a.q1 = 2;
-        b.q0 = 3;
-        b.q1 = 5;
-        b.q2 = 7;
-        b.q3 = 8;
-        Log.d(TAG,"a " + ""+ a.q0 + ""+ a.q1 + ""+ a.q2 + ""+ a.q3 );
-        Orientation.qAeqAxB(a,b);
-        Log.d(TAG,"qAeqAxB a " + ""+ a.q0 + ""+a.q1+ ""+a.q2 + ""+a.q3 );
-
-
-
-
     }//oncreate end
 
     @Override
@@ -983,7 +966,7 @@ public class MotionXYChartBuilder extends Activity {
      * */
     private static final float NS2S = 1.0f / 1000000000.0f;
     private final float[] deltaRotationVector = new float[4];
-    private float timestamp,dT,tg,ta;
+    private float timestamp,dT,tg,ta,tm;
     private final float EPSILON = 2.22E-16F;
 
     final SensorEventListener myAccelerometerListener = new SensorEventListener() {
@@ -1051,17 +1034,18 @@ public class MotionXYChartBuilder extends Activity {
             if (sensorEvent.sensor.getType() == Sensor.TYPE_ACCELEROMETER) {
 
                 accelerometerValues = sensorEvent.values;
-                if(false)Log.d(TAG, "test2 --"+"TYPE_ACCELEROMETER=" + (sensorEvent.timestamp - ta));
+                if(M)Log.d(TAG, "test3 --"+"TYPE_ACCELEROMETER=" + (sensorEvent.timestamp - ta));
                 ta = sensorEvent.timestamp;
             }
             if (sensorEvent.sensor.getType() == Sensor.TYPE_MAGNETIC_FIELD) {
-                //if(M)Log.d(TAG, "TYPE_MAGNETIC_FIELD");
                 magneticFieldValues = sensorEvent.values;
+                if(M)Log.d(TAG, "test3 --"+"TYPE_MAGNETIC_FIELD = " + (sensorEvent.timestamp - tm));
+                tm = sensorEvent.timestamp;
             }
             if(sensorEvent.sensor.getType() == Sensor.TYPE_GYROSCOPE)
             {
                 GyroscopeValues = sensorEvent.values;
-                if(false)Log.d(TAG, "test2 --"+"TYPE_GYROSCOPE = " + (sensorEvent.timestamp - tg));
+                if(M)Log.d(TAG, "test3 --"+"TYPE_GYROSCOPE = " + (sensorEvent.timestamp - tg));
                 tg = sensorEvent.timestamp;
 
             }
@@ -1094,14 +1078,16 @@ public class MotionXYChartBuilder extends Activity {
 
                         String str2 = "mag = "+magneticFieldValues[0] + "=="+magneticFieldValues[1]
                                 + "2="+magneticFieldValues[2] + "\n";
-                        String str3 = "Gyro = "+GyroscopeValues[0] + "=="+GyroscopeValues[1]
-                                + "=="+GyroscopeValues[2] + "\n";
-                        //if(M) Log.d(TAG, str1 + str2 + str3);
+                        String str3 ;
+
                         if(fusiontask.Fusion_Task(accelerometerValues,magneticFieldValues,GyroscopeValues))
                         {
-                            str1 = "liner accel = "+fusiontask.thisSV_9DOF_GBY_KALMAN.fAccGl[0] + "=="+fusiontask.thisSV_9DOF_GBY_KALMAN.fAccGl[1]
+                            if(M)Log.d(TAG, "test3 --"+"Fusion_Task = " + (sensorEvent.timestamp - timestamp));
+                            timestamp = sensorEvent.timestamp;
+                            if(M) Log.d(TAG, "test3 -- " + str1 + str2);
+                            str1 = "test3 --"+"liner accel = "+fusiontask.thisSV_9DOF_GBY_KALMAN.fAccGl[0] + "=="+fusiontask.thisSV_9DOF_GBY_KALMAN.fAccGl[1]
                                     + "=="+fusiontask.thisSV_9DOF_GBY_KALMAN.fAccGl[2] + "\n";
-                            str2 = "roll = "+fusiontask.thisSV_9DOF_GBY_KALMAN.fPhiPl + "pitch="+fusiontask.thisSV_9DOF_GBY_KALMAN.fThePl
+                            str2 = "test3 --"+"roll = "+fusiontask.thisSV_9DOF_GBY_KALMAN.fPhiPl + "pitch="+fusiontask.thisSV_9DOF_GBY_KALMAN.fThePl
                                     + "yaw="+fusiontask.thisSV_9DOF_GBY_KALMAN.fPsiPl+"compass="+fusiontask.thisSV_9DOF_GBY_KALMAN.fRhoPl+ "\n";
 
                             if(M) Log.d(TAG, str1 + str2);
@@ -1183,7 +1169,6 @@ public class MotionXYChartBuilder extends Activity {
                                 + "=="+GyroscopeValues[2] + "\n";*/
                         //if(M) Log.d(TAG, str3);//str1
                         if(fusiontask.Fusion_Task(accelerometerValues,magneticFieldValues,GyroscopeValues))
-                        //if(fusiontask.Fusion_Task(accelerometerValues,GyroscopeValues))
                         {
                             if(M)Log.d(TAG, "test2 --"+"Fusion_Task = " + (sensorEvent.timestamp - timestamp));
                                 timestamp = sensorEvent.timestamp;

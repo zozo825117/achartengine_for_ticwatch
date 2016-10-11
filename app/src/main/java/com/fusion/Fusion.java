@@ -124,9 +124,9 @@ public class Fusion extends Types{
     static void fInit_9DOF_GBY_KALMAN(SV_9DOF_GBY_KALMAN pthisSV,AccelSensor pthisAccel, MagSensor pthisMag,
                                MagCalibration pthisMagCal)
     {
-        float fDelta6DOF=0;		// eCompass estimate of inclination angle returned by least squares eCompass
-        float pfQvGQa=0;			// accelerometer noise covariance to 1g sphere
-        float fQvBQd=0;			// magnetometer noise covariances to geomagnetic sphere
+        float fDelta6DOF[]= new float[1];		// eCompass estimate of inclination angle returned by least squares eCompass
+        float pfQvGQa[]= new float[1];			// accelerometer noise covariance to 1g sphere
+        float fQvBQd[]= new float[1];			// magnetometer noise covariances to geomagnetic sphere
         int i;					// counter
 
         if(D) Log.d(TAG,"fInit_9DOF_GBY_KALMAN");
@@ -180,7 +180,7 @@ public class Fusion extends Types{
         // initialize the geomagnetic inclination angle to the estimate from the eCompass call.
         // this will be inaccurate because of the lack of a magnetic calibration but prevents a transient in
         // the Kalman filter that will be tracking it even before the first magnetic calibration.
-        pthisSV.fDeltaPl = fDelta6DOF;
+        pthisSV.fDeltaPl = fDelta6DOF[0];
         pthisSV.fsinDeltaPl = (float)Math.sin(pthisSV.fDeltaPl * FPIOVER180);
         pthisSV.fcosDeltaPl = (float)Math.sqrt(1.0F - pthisSV.fsinDeltaPl * pthisSV.fsinDeltaPl);
 
@@ -234,10 +234,8 @@ public class Fusion extends Types{
             // calculate the instantaneous angular velocity (after subtracting the gyro offset) and rotation vector ftmpMi3x1
             for (i = CHX; i <= CHZ; i++)
             {
-                //pthisSV.fOmega[i] = (float)pthisGyro.iYsBuffer[j][i] * pthisGyro.fDegPerSecPerCount - pthisSV.fbPl[i];
-                pthisSV.fOmega[i] = (float)pthisGyro.fYsBuffer[j][i] - pthisSV.fbPl[i];
+                pthisSV.fOmega[i] = (float)pthisGyro.iYsBuffer[j][i] * pthisGyro.fDegPerSecPerCount - pthisSV.fbPl[i];
                 ftmpMi3x1[i] = pthisSV.fOmega[i] * pthisSV.fGyrodeltat;
-
             }
             // convert the rotation vector ftmpMi3x1 to a rotation quaternion ftmpq
             Orientation.fQuaternionFromRotationVectorDeg(ftmpq, ftmpMi3x1, 1.0F);
@@ -402,8 +400,8 @@ public class Fusion extends Types{
 
         // invert ftmpA3x3 in situ to give ftmpA3x3 = inv(C * Qw * C^T + Qv) = inv(ftmpA3x3)
         //for (i = 0; i < 3; i++)
-            pfRows = ftmpA3x3;
-        Matrix.fmatrixAeqInvA(pfRows, iColInd, iRowInd, iPivot, 3, ierror);
+            //pfRows = ftmpA3x3;
+        Matrix.fmatrixAeqInvA(ftmpA3x3, iColInd, iRowInd, iPivot, 3, ierror);
 
         // on successful inversion set Kalman gain matrix fK6x3 = Qw * C^T * inv(C * Qw * C^T + Qv) = fQwCT6x3 * ftmpA3x3
         if (!ierror[0])
@@ -560,14 +558,14 @@ public class Fusion extends Types{
         float ftmpMi3x1[] = new float[3];					// temporary vector used for a priori calculations
         float ftmp6DOF3x1[] = new float[3];				// temporary vector used for 6DOF calculations
         float ftmpA3x1[] = new float[3];					// scratch vector
-        float fQvGQa = 0;						// accelerometer noise covariance to 1g sphere
-        float fQvBQd = 0;						// magnetometer noise covariance to geomagnetic sphere
+        float fQvGQa[] = new float[1];						// accelerometer noise covariance to 1g sphere
+        float fQvBQd[] = new float[1];						// magnetometer noise covariance to geomagnetic sphere
         float fC7x10ik;						// element i, k of measurement matrix C
         float fC7x10jk;						// element j, k of measurement matrix C
         Fquaternion fqMi;			// a priori orientation quaternion
         Fquaternion fq6DOF = new Fquaternion();			// eCompass (6DOF accelerometer+magnetometer) orientation quaternion
         Fquaternion ftmpq = new Fquaternion();			// scratch quaternion
-        float fDelta6DOF = 0;					// inclination angle from accelerometer and magnetometer
+        float fDelta6DOF[] = new float[1];					// inclination angle from accelerometer and magnetometer
         float ftmp;							// scratch float
         boolean ierror[] = new boolean[1];						// matrix inversion error flag
         int i, j, k;						// loop counters
@@ -593,10 +591,8 @@ public class Fusion extends Types{
             // calculate the instantaneous angular velocity (after subtracting the gyro offset) and rotation vector ftmpMi3x1
             for (i = CHX; i <= CHZ; i++)
             {
-                //pthisSV.fOmega[i] = (float)pthisGyro.iYsBuffer[j][i] * pthisGyro.fDegPerSecPerCount - pthisSV.fbPl[i];
-                pthisSV.fOmega[i] = (float)pthisGyro.fYsBuffer[j][i] - pthisSV.fbPl[i];
-                //ftmpMi3x1[i] = pthisSV.fOmega[i] * pthisSV.fGyrodeltat;
-                ftmpMi3x1[i] = pthisSV.fOmega[i]; //* pthisSV.fGyrodeltat
+                pthisSV.fOmega[i] = (float)pthisGyro.iYsBuffer[j][i] * pthisGyro.fDegPerSecPerCount - pthisSV.fbPl[i];
+                ftmpMi3x1[i] = pthisSV.fOmega[i] * pthisSV.fGyrodeltat;
             }
             // convert the rotation vector ftmpMi3x1 to a rotation quaternion ftmpq
             Orientation.fQuaternionFromRotationVectorDeg(ftmpq, ftmpMi3x1, 1.0F);
@@ -638,7 +634,7 @@ public class Fusion extends Types{
         {
             fqMi = pthisSV.fqPl = fq6DOF;
             Matrix.f3x3matrixAeqB(fRMi, fR6DOF);
-            pthisSV.fDeltaPl = fDelta6DOF;
+            pthisSV.fDeltaPl = fDelta6DOF[0];
             pthisSV.fsinDeltaPl = (float) Math.sin(pthisSV.fDeltaPl * FPIOVER180);
             pthisSV.fcosDeltaPl = (float) Math.sqrt(1.0F - pthisSV.fsinDeltaPl * pthisSV.fsinDeltaPl);
             pthisSV.iFirstAccelMagLock = true;
@@ -695,7 +691,7 @@ public class Fusion extends Types{
 
         // calculate the angle error between a priori (equal to a posteriori) and 6DOF estimates of the geomagnetic inclination
         // and copy into the last element of the measurement error vector fZErr
-        pthisSV.fZErr[6] = pthisSV.fDeltaPl - fDelta6DOF;
+        pthisSV.fZErr[6] = pthisSV.fDeltaPl - fDelta6DOF[0];
 
         // update Qw using the a posteriori error vectors from the previous iteration.
         // as Qv increases or Qw decreases, K . 0 and the Kalman filter is weighted towards the a priori prediction
@@ -740,11 +736,11 @@ public class Fusion extends Types{
                 pthisSV.fQw10x10[i][j] = pthisSV.fQw10x10[j][i];
 
         // calculate the vector fQv7x1 containing the diagonal elements of the measurement covariance matrix Qv
-        if (fQvBQd < FQVBQD_MIN_9DOF_GBY_KALMAN) fQvBQd = FQVBQD_MIN_9DOF_GBY_KALMAN;
-        ftmp = fQvBQd / (pthisMagCal.fB * pthisMagCal.fB);
-        pthisSV.fQv7x1[0] = pthisSV.fQv7x1[1] = pthisSV.fQv7x1[2] = 0.25F * fQvGQa + pthisSV.fAlphaOver2SqQvYQwb;
+        if (fQvBQd[0] < FQVBQD_MIN_9DOF_GBY_KALMAN) fQvBQd[0] = FQVBQD_MIN_9DOF_GBY_KALMAN;
+        ftmp = fQvBQd[0] / (pthisMagCal.fB * pthisMagCal.fB);
+        pthisSV.fQv7x1[0] = pthisSV.fQv7x1[1] = pthisSV.fQv7x1[2] = 0.25F * fQvGQa[0] + pthisSV.fAlphaOver2SqQvYQwb;
         pthisSV.fQv7x1[3] = pthisSV.fQv7x1[4] = pthisSV.fQv7x1[5] = 0.25F * ftmp + pthisSV.fAlphaOver2SqQvYQwb;
-        pthisSV.fQv7x1[6] = (fQvGQa + ftmp) * F180OVERPISQ;
+        pthisSV.fQv7x1[6] = (fQvGQa[0] + ftmp) * F180OVERPISQ;
 
         // calculate the Kalman gain matrix K = Qw * C^T * inv(C * Qw * C^T + Qv)
         // set fQwCT10x7 = Qw.C^T where Qw has size 10x10 and C^T has size 10x7

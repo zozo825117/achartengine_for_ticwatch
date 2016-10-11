@@ -124,10 +124,10 @@ public class Orientation extends Types{
     // Android: 6DOF e-Compass function computing least squares fit to orientation quaternion fq
     // on the assumption that the geomagnetic field fB and magnetic inclination angle fDelta are known
     static void fLeastSquareseCompassAndroid(Fquaternion pfq, float fB, float fDelta, float fsinDelta, float fcosDelta,
-                                      float pfDelta6DOF, float fBc[], float fGs[], float pfQvBQd, float pfQvGQa)
+                                      float pfDelta6DOF[], float fBc[], float fGs[], float pfQvBQd[], float pfQvGQa[])
     {
         // local variables
-        float fK[][] = new float[3][3];					// K measurement matrix
+        float fK[][] = new float[4][4];					// K measurement matrix
         float eigvec[][] = new float[4][4];				// matrix of eigenvectors of K
         float eigval[] = new float[4];				// vector of eigenvalues of K
         float fmodGsSq;					// modulus of fGs[] squared
@@ -156,9 +156,9 @@ public class Orientation extends Types{
         }
 
         // calculate the accelerometer and magnetometer noise covariances (units rad^2) and least squares weightings
-        pfQvGQa = Math.abs(fmodGsSq - 1.0F);
-        pfQvBQd = Math.abs(fmodBcSq - fB * fB);
-        fag = pfQvBQd / (fB * fB * pfQvGQa + pfQvBQd);
+        pfQvGQa[0] = Math.abs(fmodGsSq - 1.0F);
+        pfQvBQd[0] = Math.abs(fmodBcSq - fB * fB);
+        fag = pfQvBQd[0] / (fB * fB * pfQvGQa[0] + pfQvBQd[0]);
         fam = 1.0F - fag;
 
         // compute useful ratios to reduce computation
@@ -169,7 +169,7 @@ public class Orientation extends Types{
 
         // compute the scalar product Gs.Bc and 6DOF accelerometer plus magnetometer geomagnetic inclination angle (deg)
         fGsdotBc = fGs[CHX] * fBc[CHX] + fGs[CHY] * fBc[CHY] + fGs[CHZ] * fBc[CHZ];
-        pfDelta6DOF = (float)Math.toDegrees(Math.asin((fGsdotBc) / (fmodGs * fmodBc)));
+        pfDelta6DOF[0] = (float)Math.toDegrees(Math.asin((fGsdotBc) / (fmodGs * fmodBc)));
 
         // set the K matrix to the non-zero accelerometer components
         fK[0][0] = fK[3][3] = fagOvermodGs * fGs[CHZ];
@@ -351,7 +351,7 @@ public class Orientation extends Types{
             // rounding errors are present
             pq.q0 = 0.0F;
         }
-        if(D) Log.d(TAG,"q0="+pq.q0+"q1="+pq.q1+"q2="+pq.q2+"q3="+pq.q3);
+        if(false) Log.d(TAG,"q0="+pq.q0+"q1="+pq.q1+"q2="+pq.q2+"q3="+pq.q3);
         //return;
     }
 

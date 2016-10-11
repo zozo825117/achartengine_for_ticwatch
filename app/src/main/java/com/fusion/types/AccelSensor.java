@@ -7,8 +7,8 @@ package com.fusion.types;
 public class AccelSensor extends Types{
     public float fGsAvg[] = new float[3];						// averaged measurement (g)
     public float fgPerCount;						// g per count
-    public float fGsBuffer[][] = new float[OVERSAMPLE_RATIO][3];	// buffered measurements (counts)
-    public float fGs[]= new float[3];							// most recent unaveraged measurement (counts)
+    public int iGsBuffer[][] = new int[OVERSAMPLE_RATIO][3];	// buffered measurements (counts)
+    public int iGs[]= new int[3];							// most recent unaveraged measurement (counts)
     public int iGsAvg[]= new int[3];						// averaged measurement (counts)
     public int iCountsPerg;						// counts per g
     public int iWhoAmI;							// sensor whoami
