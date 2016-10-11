@@ -24,6 +24,9 @@ public class FusionTask extends Types {
      public final boolean EnableMag = false;
 
      private static int iCounter = 0;		// decimation counter range 0 to OVERSAMPLE_RATIO-1
+     private static int AccCounter = 0;		//
+     public static final float GRAVITY = 9.80665f;
+
      public ProjectGlobals globals = new ProjectGlobals();
      //public PressureSensor thisPressure;
      public AccelSensor thisAccel = new AccelSensor();
@@ -67,7 +70,7 @@ public class FusionTask extends Types {
           // store measurement in a buffer for later end of block processing
           thisAccel.fGs = g;
           for (i = CHX; i <= CHZ; i++)
-               thisAccel.fGsBuffer[iCounter][i] = thisAccel.fGs[i];
+               thisAccel.fGsBuffer[iCounter][i] = thisAccel.fGs[i]/GRAVITY;
 
           // every OVERSAMPLE_RATIO passes calculate the block averaged measurement
           if (iCounter == (OVERSAMPLE_RATIO - 1))
@@ -84,7 +87,7 @@ public class FusionTask extends Types {
                     else
                          thisAccel.fGsAvg[i] = ((fSum[i]) / OVERSAMPLE_RATIO); //- (OVERSAMPLE_RATIO >> 1)
                     // convert from integer counts to float g
-                    //thisAccel.fGsAvg[i] = (float)thisAccel.iGsAvg[i] * thisAccel.fgPerCount;
+                    thisAccel.fGsAvg[i] = (float)thisAccel.iGsAvg[i] * thisAccel.fgPerCount;
                }
           } // end of test for end of OVERSAMPLE_RATIO block
 
@@ -165,8 +168,8 @@ public class FusionTask extends Types {
                     } // end of compute averages for OVERSAMPLE_RATIO = 1
 
                     // convert the averages to float
-//               for (i = CHX; i <= CHZ; i++)
-//                    thisMag.fBsAvg[i] = (float)thisMag.iBsAvg[i] * thisMag.fuTPerCount;
+               for (i = CHX; i <= CHZ; i++)
+                    thisMag.fBsAvg[i] = (float)thisMag.iBsAvg[i] * thisMag.fuTPerCount;
 
                     // remove hard and soft iron terms from fBsAvg (uT) to get calibrated data fBcAvg (uT), iBc (counts)
                     Magnetic.fInvertMagCal(thisMag, thisMagCal);
@@ -178,7 +181,7 @@ public class FusionTask extends Types {
           // store in a buffer for later gyro integration by sensor fusion algorithms
           thisGyro.fYs = y;
           for (i = CHX; i <= CHZ; i++)
-               thisGyro.fYsBuffer[iCounter][i] = thisGyro.fYs[i];
+               thisGyro.fYsBuffer[iCounter][i] = (float) Math.toDegrees(thisGyro.fYs[i]);
 
           // every OVERSAMPLE_RATIO passes zero the decimation counter and enable the sensor fusion task
           if (iCounter++ == (OVERSAMPLE_RATIO - 1))
@@ -193,6 +196,17 @@ public class FusionTask extends Types {
      {
           thisSV_9DOF_GBY_KALMAN.resetflag = true;
           thisSV_6DOF_GY_KALMAN.resetflag = true;
+
+          thisAccel.iCountsPerg = MMA8652_COUNTSPERG;
+          thisAccel.fgPerCount = 1.0F / MMA8652_COUNTSPERG;
+
+          thisAccel.iCountsPerDegPerSec = FXAS21002_COUNTSPERDEGPERSEC;
+          thisAccel.fDegPerSecPerCount = 1.0F / FXAS21002_COUNTSPERDEGPERSEC;
+
+          thisMag.iCountsPeruT = 1;
+          thisMag.fCountsPeruT = (float)1;
+          thisMag.fuTPerCount = 1.0F / 1;
+
           RdSensData_task_init();
           if(EnableMag)
                Magnetic.fInitMagCalibration(thisMagCal, thisMagBuffer);
@@ -244,4 +258,5 @@ public class FusionTask extends Types {
           }
           return false;
      }
+
 }

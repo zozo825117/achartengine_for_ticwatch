@@ -411,17 +411,14 @@ public class Matrix extends Types {
                             cot2phi = 0.5F * (eigval[ic] - eigval[ir]) / (A[ir][ic]);
 
                             // calculate tan(phi) correcting sign to ensure the smaller solution is used
-                            double dtanphi = Math.abs(cot2phi);
-                            double dcot2phi = Math.sqrt(1.0F + cot2phi * cot2phi);
-                            tanphi = 1.0F / (float)(dtanphi + dcot2phi);
+                            tanphi = 1.0F / (float)(Math.abs(cot2phi) + Math.sqrt(1.0F + cot2phi * cot2phi));
                             if (cot2phi < 0.0F)
                             {
                                 tanphi = -tanphi;
                             }
 
                             // calculate the sine and cosine of the Jacobi rotation angle phi
-                            dtanphi = Math.sqrt(1.0F + tanphi * tanphi);
-                            cosphi = 1.0F / (float)dtanphi;
+                            cosphi = 1.0F / (float)Math.sqrt(1.0F + tanphi * tanphi);
                             sinphi = tanphi * cosphi;
 
                             // calculate tan(phi/2)
@@ -489,7 +486,7 @@ public class Matrix extends Types {
 
     // function uses Gauss-Jordan elimination to compute the inverse of matrix A in situ
     // on exit, A is replaced with its inverse
-    static void fmatrixAeqInvA(float A[][], int iColInd[], int iRowInd[], int iPivot[], int isize, boolean pierror)
+    static void fmatrixAeqInvA(float A[][], int iColInd[], int iRowInd[], int iPivot[], int isize, boolean pierror[])
     {
         float largest;					// largest element used for pivoting
         float scaling;					// scaling factor in pivoting
@@ -502,7 +499,7 @@ public class Matrix extends Types {
         iPivotRow = iPivotCol = 0;
 
         // default to successful inversion
-        pierror = false;
+        pierror[0] = false;
 
         // initialize the pivot array to 0
         for (j = 0; j < isize; j++)
@@ -540,7 +537,7 @@ public class Matrix extends Types {
                         {
                             // zero determinant situation: exit with identity matrix and set error flag
                             fmatrixAeqI(A, isize);
-                            pierror = true;
+                            pierror[0] = true;
                             return;
                         }
                     }
@@ -571,7 +568,7 @@ public class Matrix extends Types {
             {
                 // zero determinant situation: exit with identity matrix and set error flag
                 fmatrixAeqI(A, isize);
-                pierror = true;
+                pierror[0] = true;
                 return;
             }
 
@@ -625,7 +622,7 @@ public class Matrix extends Types {
             }
         }
 
-        return;
+        //return;
     }
 
 }

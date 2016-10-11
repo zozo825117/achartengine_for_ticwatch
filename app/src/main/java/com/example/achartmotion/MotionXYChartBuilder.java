@@ -50,12 +50,8 @@ import android.widget.LinearLayout;
 import android.widget.Toast;
 
 import com.fusion.FusionTask;
-import com.fusion.types.SV_9DOF_GBY_KALMAN;
-import com.fusion.types.Types;
 import com.fusion.Orientation;
 import com.fusion.types.Fquaternion;
-import com.fusion.types.MagSensor;
-import com.fusion.types.ProjectGlobals;
 import com.google.android.gms.appindexing.AppIndex;
 import com.google.android.gms.common.api.GoogleApiClient;
 
@@ -160,7 +156,7 @@ public class MotionXYChartBuilder extends Activity {
     private boolean UsedFusion;
 
 
-     final int SensorDelay = SensorManager.SENSOR_DELAY_GAME; //SENSOR_DELAY_UI
+     final int SensorDelay = SensorManager.SENSOR_DELAY_FASTEST; //SENSOR_DELAY_UI
 
     final  int[] SeriesColor = {
             Color.TRANSPARENT,
@@ -987,7 +983,7 @@ public class MotionXYChartBuilder extends Activity {
      * */
     private static final float NS2S = 1.0f / 1000000000.0f;
     private final float[] deltaRotationVector = new float[4];
-    private float timestamp,dT,att;
+    private float timestamp,dT,tg,ta;
     private final float EPSILON = 2.22E-16F;
 
     final SensorEventListener myAccelerometerListener = new SensorEventListener() {
@@ -1053,9 +1049,10 @@ public class MotionXYChartBuilder extends Activity {
                 //waveUpdataRoutine(Sensor.TYPE_ORIENTATION,sensorEvent.values[0], sensorEvent.values[1], sensorEvent.values[2]);
             }
             if (sensorEvent.sensor.getType() == Sensor.TYPE_ACCELEROMETER) {
-                //if(M)Log.d(TAG, "TYPE_ACCELEROMETER=" + (sensorEvent.timestamp - att));
+
                 accelerometerValues = sensorEvent.values;
-                att = sensorEvent.timestamp;
+                if(false)Log.d(TAG, "test2 --"+"TYPE_ACCELEROMETER=" + (sensorEvent.timestamp - ta));
+                ta = sensorEvent.timestamp;
             }
             if (sensorEvent.sensor.getType() == Sensor.TYPE_MAGNETIC_FIELD) {
                 //if(M)Log.d(TAG, "TYPE_MAGNETIC_FIELD");
@@ -1064,8 +1061,8 @@ public class MotionXYChartBuilder extends Activity {
             if(sensorEvent.sensor.getType() == Sensor.TYPE_GYROSCOPE)
             {
                 GyroscopeValues = sensorEvent.values;
-                //if(M)Log.d(TAG, "TYPE_GYROSCOPE = " + (sensorEvent.timestamp - timestamp));
-                timestamp = sensorEvent.timestamp;
+                if(false)Log.d(TAG, "test2 --"+"TYPE_GYROSCOPE = " + (sensorEvent.timestamp - tg));
+                tg = sensorEvent.timestamp;
 
             }
 
@@ -1114,13 +1111,14 @@ public class MotionXYChartBuilder extends Activity {
                         GyroscopeValues = null;
                     }
                 }else {
-                    if(accelerometerValues != null && GyroscopeValues != null){
-                        String str1 = "accel = "+accelerometerValues[0] + "=="+accelerometerValues[1]
+                    if(accelerometerValues != null && GyroscopeValues != null)
+                    {
+/*                        String str1 = "accel = "+accelerometerValues[0] + "=="+accelerometerValues[1]
                                 + "=="+accelerometerValues[2] + "\n";
 
                         String str2 ;
                         String str3 = "Gyro = "+GyroscopeValues[0] + "=="+GyroscopeValues[1]
-                                + "=="+GyroscopeValues[2] + "\n";
+                                + "=="+GyroscopeValues[2] + "\n";*/
 /*                        float[] Q = new float[9];
                         float[] AG = new float[3];
                         // This timestep's delta rotation to be multiplied by the current rotation
@@ -1162,13 +1160,13 @@ public class MotionXYChartBuilder extends Activity {
                         str2 = "AG0="+ AG[0]+"AG1="+ AG[1]+"AG2="+ AG[2] + "\n";*/
                         //if(M) Log.d(TAG, str3 + str2);//str1
 
-                        for(int i=0;i < accelerometerValues.length;i++)
+/*                        for(int i=0;i < accelerometerValues.length;i++)
                         {
                             accelerometerValues[i] = accelerometerValues[i] / SensorManager.STANDARD_GRAVITY;
                         }
-/*                        accelerometerValues[0] = 1;
+*//*                        accelerometerValues[0] = 1;
                         accelerometerValues[1] = 0;
-                        accelerometerValues[2] = 0;*/
+                        accelerometerValues[2] = 0;*//*
                                 str3 = "Gyro = "+GyroscopeValues[0] + "=="+GyroscopeValues[1]
                                 + "=="+GyroscopeValues[2] + "\n";
                         //if(M) Log.d(TAG, str3);//str1
@@ -1182,24 +1180,31 @@ public class MotionXYChartBuilder extends Activity {
 
 
                          str3 = "Gyro = "+GyroscopeValues[0] + "=="+GyroscopeValues[1]
-                                + "=="+GyroscopeValues[2] + "\n";
+                                + "=="+GyroscopeValues[2] + "\n";*/
                         //if(M) Log.d(TAG, str3);//str1
                         if(fusiontask.Fusion_Task(accelerometerValues,magneticFieldValues,GyroscopeValues))
+                        //if(fusiontask.Fusion_Task(accelerometerValues,GyroscopeValues))
                         {
-                            if(M) Log.d(TAG, str1 + str3);//str1
+                            if(M)Log.d(TAG, "test2 --"+"Fusion_Task = " + (sensorEvent.timestamp - timestamp));
+                                timestamp = sensorEvent.timestamp;
+                            //if(M) Log.d(TAG, str1 + str3);//str1
 
                             waveUpdataRoutine(Sensor.TYPE_LINEAR_ACCELERATION,fusiontask.thisSV_6DOF_GY_KALMAN.fAccGl[0],
                                     fusiontask.thisSV_6DOF_GY_KALMAN.fAccGl[1], fusiontask.thisSV_6DOF_GY_KALMAN.fAccGl[2]);
 
-                            waveUpdataRoutine(Sensor.TYPE_ORIENTATION,fusiontask.thisSV_6DOF_GY_KALMAN.fPhiPl,
-                                    fusiontask.thisSV_6DOF_GY_KALMAN.fThePl,fusiontask.thisSV_6DOF_GY_KALMAN.fPsiPl);
+                            waveUpdataRoutine(Sensor.TYPE_ORIENTATION,fusiontask.thisSV_6DOF_GY_KALMAN.fPhiPl/100,
+                                    fusiontask.thisSV_6DOF_GY_KALMAN.fThePl/100,fusiontask.thisSV_6DOF_GY_KALMAN.fPsiPl/100);
 
-                            str1 = "liner accel = "+fusiontask.thisSV_6DOF_GY_KALMAN.fAccGl[0] + "=="+fusiontask.thisSV_6DOF_GY_KALMAN.fAccGl[1]
+/*                            waveUpdataRoutine(Sensor.TYPE_ORIENTATION,fusiontask.thisAccel.fGsAvg[0],fusiontask.thisAccel.fGsAvg[1],
+                                    fusiontask.thisAccel.fGsAvg[2]);*/
+
+
+                            String str1 = "liner accel = "+fusiontask.thisSV_6DOF_GY_KALMAN.fAccGl[0] + "=="+fusiontask.thisSV_6DOF_GY_KALMAN.fAccGl[1]
                                     + "=="+fusiontask.thisSV_6DOF_GY_KALMAN.fAccGl[2] + "\n";
-                            str2 = "roll = "+fusiontask.thisSV_6DOF_GY_KALMAN.fPhiPl + "pitch="+fusiontask.thisSV_6DOF_GY_KALMAN.fThePl
+                            String str2 = "roll = "+fusiontask.thisSV_6DOF_GY_KALMAN.fPhiPl + "pitch="+fusiontask.thisSV_6DOF_GY_KALMAN.fThePl
                                     + "yaw="+fusiontask.thisSV_6DOF_GY_KALMAN.fPsiPl+"compass="+fusiontask.thisSV_6DOF_GY_KALMAN.fRhoPl+ "\n";
 
-                            if(M) Log.d(TAG, str1 + str2);
+                            if(false) Log.d(TAG, str1 + str2);
                         }
                         accelerometerValues = null;
                         GyroscopeValues = null;

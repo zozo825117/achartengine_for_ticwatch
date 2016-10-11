@@ -336,7 +336,7 @@ public class Magnetic extends Types {
         float fE;								// error function = r^T.r
         float fOffset[] = new float[3];						// offset to remove large DC hard iron bias in matrix
         int iCount;							// number of measurements counted
-        boolean ierror = false;							// matrix inversion error flag
+        boolean ierror[] = new boolean[1];							// matrix inversion error flag
         int i, j, k, l;						// loop counters
         // working arrays for 4x4 matrix inversion
         float pfRows[][];

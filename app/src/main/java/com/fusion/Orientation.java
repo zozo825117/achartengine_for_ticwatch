@@ -233,62 +233,7 @@ public class Orientation extends Types{
         //return;
     }
 
-/*    // extract the Android angles in degrees from the Android rotation matrix
-    static void fAndroidAnglesDegFromRotationMatrix(float R[][], float pfPhiDeg, float pfTheDeg, float pfPsiDeg,
-                                             float pfRhoDeg, float pfChiDeg)
-    {
-        // calculate the roll angle -90.0 <= Phi <= 90.0 deg
-        pfPhiDeg = (float)Math.toDegrees(Math.asin(R[CHX][CHZ]));
-
-        // calculate the pitch angle -180.0 <= The < 180.0 deg
-        pfTheDeg = (float) Math.toDegrees(Math.atan2(-R[CHY][CHZ], R[CHZ][CHZ]));
-
-        // map +180 pitch onto the functionally equivalent -180 deg pitch
-        if (pfTheDeg == 180.0F)
-        {
-            pfTheDeg = -180.0F;
-        }
-
-        // calculate the yaw (compass) angle 0.0 <= Psi < 360.0 deg
-        if (pfPhiDeg == 90.0F)
-        {
-            // vertical downwards gimbal lock case
-            pfPsiDeg = (float) Math.toDegrees(Math.atan2(R[CHY][CHX], R[CHY][CHY])) - pfTheDeg;
-        }
-        else if (pfPhiDeg == -90.0F)
-        {
-            // vertical upwards gimbal lock case
-            pfPsiDeg = (float) Math.toDegrees(Math.atan2(R[CHY][CHX], R[CHY][CHY])) + pfTheDeg;
-        }
-        else
-        {
-            // general case
-            pfPsiDeg = (float) Math.toDegrees(Math.atan2(-R[CHX][CHY], R[CHX][CHX]));
-        }
-
-        // map yaw angle Psi onto range 0.0 <= Psi < 360.0 deg
-        if (pfPsiDeg < 0.0F)
-        {
-            pfPsiDeg += 360.0F;
-        }
-
-        // check for rounding errors mapping small negative angle to 360 deg
-        if (pfPsiDeg >= 360.0F)
-        {
-            pfPsiDeg = 0.0F;
-        }
-
-        // the compass heading angle Rho equals the yaw angle Psi
-        // this definition is compliant with Motorola Xoom tablet behavior
-        pfRhoDeg = pfPsiDeg;
-
-        // calculate the tilt angle from vertical Chi (0 <= Chi <= 180 deg)
-        pfChiDeg = (float) Math.toDegrees(Math.acos(R[CHZ][CHZ]));
-
-        if(D) Log.d(TAG, "roll = "+ pfPhiDeg + "pitch="+pfTheDeg + "yaw="+pfPsiDeg+"compass="+pfRhoDeg+ "\n");
-
-        //return;
-    }*/
+    // extract the Android angles in degrees from the Android rotation matrix
     static void fAndroidAnglesDegFromRotationMatrix(float R[][], float pDeg[])
     {
         // calculate the roll angle -90.0 <= Phi <= 90.0 deg

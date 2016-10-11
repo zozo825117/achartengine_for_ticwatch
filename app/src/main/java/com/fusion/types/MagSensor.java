@@ -11,8 +11,8 @@ public class MagSensor extends Types{
     public float fCountsPeruT;						// counts per uT
     public float fBsBuffer[][] = new float[OVERSAMPLE_RATIO][3];	// buffered uncalibrated measurement (counts)
     public float fBs[] = new float[3];							// most recent unaveraged uncalibrated measurement (counts)
-    //public int iBsAvg[] = new int[3];						// averaged uncalibrated measurement (counts)
-    //public int iBcAvg[] = new int[3];						// averaged calibrated measurement (counts)
+    public int iBsAvg[] = new int[3];						// averaged uncalibrated measurement (counts)
+    public int iBcAvg[] = new int[3];						// averaged calibrated measurement (counts)
     public int iCountsPeruT;						// counts per uT
     public int iWhoAmI;							// sensor whoami
 }

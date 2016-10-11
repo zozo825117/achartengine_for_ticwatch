@@ -48,7 +48,7 @@ import static com.fusion.types.Types.quaternion.Q6AG;
 
 public class Fusion extends Types{
 
-    private static boolean D = true;
+    private static boolean D = false;
     private static String TAG = "Fusion";
     // *********************************************************************************
     // COMPUTE_6DOF_GY_KALMAN constants
@@ -209,7 +209,7 @@ public class Fusion extends Types{
         Fquaternion fqMi;			// a priori orientation quaternion
         Fquaternion ftmpq = new Fquaternion();			// scratch quaternion
         float ftmp;							// scratch float
-        boolean ierror = false;						// matrix inversion error flag
+        boolean ierror[] = new boolean[1];						// matrix inversion error flag
         int i, j, k;						// loop counters
 
         // working arrays for 3x3 matrix inversion
@@ -237,17 +237,14 @@ public class Fusion extends Types{
                 //pthisSV.fOmega[i] = (float)pthisGyro.iYsBuffer[j][i] * pthisGyro.fDegPerSecPerCount - pthisSV.fbPl[i];
                 pthisSV.fOmega[i] = (float)pthisGyro.fYsBuffer[j][i] - pthisSV.fbPl[i];
                 ftmpMi3x1[i] = pthisSV.fOmega[i] * pthisSV.fGyrodeltat;
-                //ftmpMi3x1[i] = pthisSV.fOmega[i];
-                //if(D) Log.d(TAG,"fOmega" + i + "=" + pthisSV.fOmega[i]);
+
             }
-            //if(D) Log.d(TAG,"fOmega=" + pthisSV.fOmega[0]+"fOmega=" + pthisSV.fOmega[1]+ "fOmega=" + pthisSV.fOmega[2]);
             // convert the rotation vector ftmpMi3x1 to a rotation quaternion ftmpq
             Orientation.fQuaternionFromRotationVectorDeg(ftmpq, ftmpMi3x1, 1.0F);
-            //if(D) Log.d(TAG,"ftmpq q0="+ftmpq.q0+"q1="+ftmpq.q1+"q2="+ftmpq.q2+"q3="+ftmpq.q3);
             // integrate the gyro sensor incremental quaternions into the a priori orientation quaternion fqMi
             Orientation.qAeqAxB(fqMi, ftmpq);
         }
-        if(D) Log.d(TAG,"fqMi.q0=" + fqMi.q0 + "fqMi.q1=" + fqMi.q1 + "fqMi.q2=" + fqMi.q2 + "fqMi.q3=" + fqMi.q3);
+        if(D) Log.d(TAG,"2114"+"fqMi.q0=" + fqMi.q0 + "fqMi.q1=" + fqMi.q1 + "fqMi.q2=" + fqMi.q2 + "fqMi.q3=" + fqMi.q3);
 
         // set ftmp3DOF3x1 to the 3DOF gravity vector in the sensor frame
         fmodSqGs = pthisAccel.fGsAvg[CHX] * pthisAccel.fGsAvg[CHX] + pthisAccel.fGsAvg[CHY] * pthisAccel.fGsAvg[CHY] +
@@ -409,7 +406,7 @@ public class Fusion extends Types{
         Matrix.fmatrixAeqInvA(pfRows, iColInd, iRowInd, iPivot, 3, ierror);
 
         // on successful inversion set Kalman gain matrix fK6x3 = Qw * C^T * inv(C * Qw * C^T + Qv) = fQwCT6x3 * ftmpA3x3
-        if (!ierror)
+        if (!ierror[0])
         {
             // normal case
             for (i = 0; i < 6; i++) // loop over rows
@@ -482,10 +479,10 @@ public class Fusion extends Types{
 
         // normalize the a posteriori quaternion and compute the a posteriori rotation matrix and rotation vector
         Orientation.fqAeqNormqA(pthisSV.fqPl);
-        if(D) Log.d(TAG,"fqPl.q0=" + pthisSV.fqPl.q0 + "fqPl.q1=" + pthisSV.fqPl.q1 +
+        if(D) Log.d(TAG,"2114"+"fqPl.q0=" + pthisSV.fqPl.q0 + "fqPl.q1=" + pthisSV.fqPl.q1 +
                 "fqPl.q2=" + pthisSV.fqPl.q2 + "fqPl.q3=" + pthisSV.fqPl.q3);
         Orientation.fRotationMatrixFromQuaternion(pthisSV.fRPl, pthisSV.fqPl);
-        if(D) Log.d(TAG,"pthisSV.fRPl=" + pthisSV.fRPl[CHX][CHX] + "pthisSV.fRPl=" + pthisSV.fRPl[CHX][CHY] +
+        if(false) Log.d(TAG,"pthisSV.fRPl=" + pthisSV.fRPl[CHX][CHX] + "pthisSV.fRPl=" + pthisSV.fRPl[CHX][CHY] +
                 "pthisSV.fRPl=" + pthisSV.fRPl[CHX][CHZ]);
         Orientation.fRotationVectorDegFromQuaternion(pthisSV.fqPl, pthisSV.fRVecPl);
 
@@ -493,7 +490,7 @@ public class Fusion extends Types{
         for (i = CHX; i <= CHZ; i++)
             pthisSV.fbPl[i] -= pthisSV.fbErrPl[i];
 
-        if(D) Log.d(TAG,"fGsAvg0=" + pthisAccel.fGsAvg[CHX] + "fGsAvg1=" + pthisAccel.fGsAvg[CHY] + "fGsAvg2=" + pthisAccel.fGsAvg[CHZ]);
+        if(false) Log.d(TAG,"fGsAvg0=" + pthisAccel.fGsAvg[CHX] + "fGsAvg1=" + pthisAccel.fGsAvg[CHY] + "fGsAvg2=" + pthisAccel.fGsAvg[CHZ]);
         // compute the linear acceleration in the global frame
         // de-rotate the accelerometer from the sensor to global frame using the transpose (inverse) of the orientation matrix
         pthisSV.fAccGl[CHX] = pthisSV.fRPl[CHX][CHX] * pthisAccel.fGsAvg[CHX] + pthisSV.fRPl[CHY][CHX] * pthisAccel.fGsAvg[CHY] +
@@ -549,7 +546,7 @@ public class Fusion extends Types{
                 break;
         }
 
-        if(D) Log.d(TAG, "roll = "+pthisSV.fPhiPl + "pitch="+pthisSV.fThePl+ "yaw="+pthisSV.fPsiPl+"compass="+pthisSV.fRhoPl+ "\n");
+        if(false) Log.d(TAG, "roll = "+pthisSV.fPhiPl + "pitch="+pthisSV.fThePl+ "yaw="+pthisSV.fPsiPl+"compass="+pthisSV.fRhoPl+ "\n");
         //return;
     } // end fRun_6DOF_GY_KALMAN
     // 9DOF accelerometer+magnetometer+gyroscope orientation function implemented using indirect complementary Kalman filter
@@ -572,7 +569,7 @@ public class Fusion extends Types{
         Fquaternion ftmpq = new Fquaternion();			// scratch quaternion
         float fDelta6DOF = 0;					// inclination angle from accelerometer and magnetometer
         float ftmp;							// scratch float
-        boolean ierror = false;						// matrix inversion error flag
+        boolean ierror[] = new boolean[1];						// matrix inversion error flag
         int i, j, k;						// loop counters
 
         // working arrays for 7x7 matrix inversion
@@ -844,7 +841,7 @@ public class Fusion extends Types{
         Matrix.fmatrixAeqInvA(ftmpA7x7, iColInd, iRowInd, iPivot, 7, ierror);
 
         // on successful inversion set Kalman gain matrix K10x7 = Qw * C^T * inv(C * Qw * C^T + Qv) = fQwCT10x7 * ftmpA7x7
-        if (!ierror)
+        if (!ierror[0])
         {
             // normal case
             for (i = 0; i < 10; i++) // loop over rows
