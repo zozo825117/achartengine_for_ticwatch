@@ -1034,18 +1034,18 @@ public class MotionXYChartBuilder extends Activity {
             if (sensorEvent.sensor.getType() == Sensor.TYPE_ACCELEROMETER) {
 
                 accelerometerValues = sensorEvent.values;
-                if(M)Log.d(TAG, "test3 --"+"TYPE_ACCELEROMETER=" + (sensorEvent.timestamp - ta));
+                if(false)Log.d(TAG, "TYPE_ACCELEROMETER=" + (sensorEvent.timestamp - ta));
                 ta = sensorEvent.timestamp;
             }
             if (sensorEvent.sensor.getType() == Sensor.TYPE_MAGNETIC_FIELD) {
                 magneticFieldValues = sensorEvent.values;
-                if(M)Log.d(TAG, "test3 --"+"TYPE_MAGNETIC_FIELD = " + (sensorEvent.timestamp - tm));
+                if(M)Log.d(TAG, "TYPE_MAGNETIC_FIELD = " + (sensorEvent.timestamp - tm));
                 tm = sensorEvent.timestamp;
             }
             if(sensorEvent.sensor.getType() == Sensor.TYPE_GYROSCOPE)
             {
                 GyroscopeValues = sensorEvent.values;
-                if(M)Log.d(TAG, "test3 --"+"TYPE_GYROSCOPE = " + (sensorEvent.timestamp - tg));
+                if(false)Log.d(TAG, "TYPE_GYROSCOPE = " + (sensorEvent.timestamp - tg));
                 tg = sensorEvent.timestamp;
 
             }
@@ -1084,7 +1084,7 @@ public class MotionXYChartBuilder extends Activity {
                         {
                             if(M)Log.d(TAG, "test3 --"+"Fusion_Task = " + (sensorEvent.timestamp - timestamp));
                             timestamp = sensorEvent.timestamp;
-                            if(M) Log.d(TAG, "test3 -- " + str1 + str2);
+                            if(M) Log.d(TAG, str1 + str2);
                             str1 = "test3 --"+"liner accel = "+fusiontask.thisSV_9DOF_GBY_KALMAN.fAccGl[0] + "=="+fusiontask.thisSV_9DOF_GBY_KALMAN.fAccGl[1]
                                     + "=="+fusiontask.thisSV_9DOF_GBY_KALMAN.fAccGl[2] + "\n";
                             str2 = "test3 --"+"roll = "+fusiontask.thisSV_9DOF_GBY_KALMAN.fPhiPl + "pitch="+fusiontask.thisSV_9DOF_GBY_KALMAN.fThePl

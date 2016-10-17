@@ -638,6 +638,7 @@ public class Fusion extends Types{
             pthisSV.fsinDeltaPl = (float) Math.sin(pthisSV.fDeltaPl * FPIOVER180);
             pthisSV.fcosDeltaPl = (float) Math.sqrt(1.0F - pthisSV.fsinDeltaPl * pthisSV.fsinDeltaPl);
             pthisSV.iFirstAccelMagLock = true;
+            if(D) Log.d(TAG,"test4"+"fsinDeltaPl="+pthisSV.fsinDeltaPl+" fcosDeltaPl"+pthisSV.fcosDeltaPl );
         }
 
         // set ftmp6DOF3x1 to the 6DOF gravity vector in the sensor frame (ignoring the minus sign for Android and Windows 8)

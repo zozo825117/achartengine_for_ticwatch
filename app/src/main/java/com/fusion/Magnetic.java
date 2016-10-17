@@ -221,7 +221,7 @@ public class Magnetic extends Types {
         } // end case 4
 
         // this line should be unreachable
-        return;
+        //return;
     }
     // function maps the uncalibrated magnetometer data fBsAvg (uT) onto calibrated averaged data fBcAvg (uT), iBcAvg (counts)
     public static void fInvertMagCal(MagSensor pthisMag, MagCalibration pthisMagCal)

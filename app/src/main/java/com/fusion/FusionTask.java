@@ -18,7 +18,7 @@ import com.fusion.types.Types;
 
 public class FusionTask extends Types {
 
-     private boolean D = false;
+     private boolean D = true;
      private String TAG = "FusionTask";
 
      public final boolean EnableMag = true;
@@ -242,6 +242,7 @@ public class FusionTask extends Types {
                             thisGyro, thisMagCal);
                     // check no magnetic calibration is in progress
                     if (!thisMagCal.iCalInProgress) {
+                         if(D) Log.d(TAG,"test4 -- iMagBufferCount"+thisMagBuffer.iMagBufferCount);
                          // do the first 4 element calibration immediately there are a minimum of MINMEASUREMENTS4CAL
                          initiatemagcal = (!thisMagCal.iMagCalHasRun && (thisMagBuffer.iMagBufferCount >= MINMEASUREMENTS4CAL));
 
