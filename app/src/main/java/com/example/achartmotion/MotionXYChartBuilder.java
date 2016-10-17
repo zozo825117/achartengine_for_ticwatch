@@ -733,23 +733,6 @@ public class MotionXYChartBuilder extends Activity {
         // See https://g.co/AppIndexing/AndroidStudio for more information.
         client = new GoogleApiClient.Builder(this).addApi(AppIndex.API).build();
 
-
-        //test
-        Fquaternion a = new Fquaternion();
-        Fquaternion b = new Fquaternion();
-        a.q0 = 1;
-        a.q1 = 2;
-        b.q0 = 3;
-        b.q1 = 5;
-        b.q2 = 7;
-        b.q3 = 8;
-        Log.d(TAG,"a " + ""+ a.q0 + ""+ a.q1 + ""+ a.q2 + ""+ a.q3 );
-        Orientation.qAeqAxB(a,b);
-        Log.d(TAG,"qAeqAxB a " + ""+ a.q0 + ""+a.q1+ ""+a.q2 + ""+a.q3 );
-
-
-
-
     }//oncreate end
 
     @Override
@@ -983,7 +966,7 @@ public class MotionXYChartBuilder extends Activity {
      * */
     private static final float NS2S = 1.0f / 1000000000.0f;
     private final float[] deltaRotationVector = new float[4];
-    private float timestamp,dT,tg,ta;
+    private float timestamp,dT,tg,ta,tm;
     private final float EPSILON = 2.22E-16F;
 
     final SensorEventListener myAccelerometerListener = new SensorEventListener() {
@@ -1051,17 +1034,19 @@ public class MotionXYChartBuilder extends Activity {
             if (sensorEvent.sensor.getType() == Sensor.TYPE_ACCELEROMETER) {
 
                 accelerometerValues = sensorEvent.values;
-                if(false)Log.d(TAG, "test2 --"+"TYPE_ACCELEROMETER=" + (sensorEvent.timestamp - ta));
+                if(M)Log.d(TAG, "test2 --"+"TYPE_ACCELEROMETER=" + (sensorEvent.timestamp - ta));
                 ta = sensorEvent.timestamp;
             }
             if (sensorEvent.sensor.getType() == Sensor.TYPE_MAGNETIC_FIELD) {
                 //if(M)Log.d(TAG, "TYPE_MAGNETIC_FIELD");
                 magneticFieldValues = sensorEvent.values;
+                if(false)Log.d(TAG, "TYPE_MAGNETIC_FIELD = " + (sensorEvent.timestamp - tm));
+                tm = sensorEvent.timestamp;
             }
             if(sensorEvent.sensor.getType() == Sensor.TYPE_GYROSCOPE)
             {
                 GyroscopeValues = sensorEvent.values;
-                if(false)Log.d(TAG, "test2 --"+"TYPE_GYROSCOPE = " + (sensorEvent.timestamp - tg));
+                if(M)Log.d(TAG, "test2 --"+"TYPE_GYROSCOPE = " + (sensorEvent.timestamp - tg));
                 tg = sensorEvent.timestamp;
 
             }

@@ -24,8 +24,6 @@ public class FusionTask extends Types {
      public final boolean EnableMag = false;
 
      private static int iCounter = 0;		// decimation counter range 0 to OVERSAMPLE_RATIO-1
-     private static int AccCounter = 0;		//
-     public static final float GRAVITY = 9.80665f;
 
      public ProjectGlobals globals = new ProjectGlobals();
      //public PressureSensor thisPressure;
@@ -50,12 +48,23 @@ public class FusionTask extends Types {
 //          globals.RPCPacketOn = true;
 //          globals.AltPacketOn = true;
 
+          thisAccel.iCountsPerg = ANDROID_ACC_COUNTSPERG;
+          thisAccel.fgPerCount = 1.0F / ANDROID_ACC_COUNTSPERG;
+
+          thisGyro.iCountsPerDegPerSec = ANDROID_GYRO_COUNTSPERDEGPERSEC;
+          thisGyro.fDegPerSecPerCount = 1.0F / ANDROID_GYRO_COUNTSPERDEGPERSEC;
+
+          thisMag.iCountsPeruT = ANDROID_MAG_COUNTSPERUT;
+          thisMag.fCountsPeruT = (float)ANDROID_MAG_COUNTSPERUT;
+          thisMag.fuTPerCount = 1.0F / ANDROID_MAG_COUNTSPERUT;
           // initialize magnetometer data structure
           // zero the calibrated measurement since this is used for indexing the magnetic buffer even before first calibration
           if(EnableMag){
-               thisMag.fBcAvg[i]= 0;
+               thisSV_9DOF_GBY_KALMAN.resetflag = true;
+               for (i = CHX; i <= CHZ; i++)
+                    thisMag.iBcAvg[i]= 0;
           }else {
-
+               thisSV_6DOF_GY_KALMAN.resetflag = true;
           }
 
      }
@@ -63,14 +72,19 @@ public class FusionTask extends Types {
      private void RdSensData_task(float g[],float m[],float y[])
      {
           int i,j, k=0,l=0;				// counters
-          float fSum[] = new float[3];					// array of sums
-          float ftmp;						// scratch
+          int iSum[] = new int[3];					// array of sums
+          int itmp;						// scratch
 
           if(D) Log.d(TAG,"RdSensData_task");
           // store measurement in a buffer for later end of block processing
-          thisAccel.fGs = g;
+          int gs[] = new int[3];
+          for (i = CHX; i <= CHZ; i++) {
+               gs[i] = (int) (g[i] * thisAccel.iCountsPerg / GRAVITY);
+          }
+
+          thisAccel.iGs = gs;
           for (i = CHX; i <= CHZ; i++)
-               thisAccel.fGsBuffer[iCounter][i] = thisAccel.fGs[i]/GRAVITY;
+               thisAccel.iGsBuffer[iCounter][i] = thisAccel.iGs[i];
 
           // every OVERSAMPLE_RATIO passes calculate the block averaged measurement
           if (iCounter == (OVERSAMPLE_RATIO - 1))
@@ -78,14 +92,14 @@ public class FusionTask extends Types {
                // calculate the block averaged measurement in counts and g
                for (i = CHX; i <= CHZ; i++)
                {
-                    fSum[i] = 0;
+                    iSum[i] = 0;
                     for (j = 0; j < OVERSAMPLE_RATIO; j++)
-                         fSum[i] += thisAccel.fGsBuffer[j][i];
+                         iSum[i] += thisAccel.iGsBuffer[j][i];
                     // compute the average with nearest integer rounding
-                    if (fSum[i] >= 0)
-                         thisAccel.fGsAvg[i] = ((fSum[i] ) / OVERSAMPLE_RATIO);//+ (OVERSAMPLE_RATIO >> 1)
+                    if (iSum[i] >= 0)
+                         thisAccel.iGsAvg[i] = ((iSum[i] + (OVERSAMPLE_RATIO >> 1)) / OVERSAMPLE_RATIO);//
                     else
-                         thisAccel.fGsAvg[i] = ((fSum[i]) / OVERSAMPLE_RATIO); //- (OVERSAMPLE_RATIO >> 1)
+                         thisAccel.iGsAvg[i] = ((iSum[i] + (OVERSAMPLE_RATIO >> 1)) / OVERSAMPLE_RATIO); //
                     // convert from integer counts to float g
                     thisAccel.fGsAvg[i] = (float)thisAccel.iGsAvg[i] * thisAccel.fgPerCount;
                }
@@ -93,9 +107,17 @@ public class FusionTask extends Types {
 
           if(EnableMag){
                // store in a buffer for later end of block processing
-               thisMag.fBs = m;
+               int ms[] = new int[3];
+               for (i = CHX; i <= CHZ; i++) {
+                    ms[i] = (int) (m[i] * thisMag.iCountsPeruT);
+               }
+               thisMag.iBs = ms;
                for (i = CHX; i <= CHZ; i++)
-                    thisMag.fBsBuffer[iCounter][i] = thisMag.fBs[i];
+                    thisMag.iBsBuffer[iCounter][i] = thisMag.iBs[i];
+               // update magnetic buffer with iBs avoiding a write to the shared structure while a calibration is in progress.
+               if (!thisMagCal.iCalInProgress)
+                    Magnetic.iUpdateMagnetometerBuffer(thisMagBuffer, thisMag, globals.loopcounter);
+
                // every OVERSAMPLE_RATIO passes calculate the block averaged and calibrated measurement using an anti-glitch filter
                // that rejects the measurement furthest from the mean. magnetometer sensors are sensitive
                // to occasional current pulses from power supply traces and so on and this is a simple method to remove these.
@@ -105,21 +127,21 @@ public class FusionTask extends Types {
                     for (i = CHX; i <= CHZ; i++)
                     {
                          // accumulate channel sums
-                         fSum[i] = 0;
+                         iSum[i] = 0;
                          for (j = 0; j < OVERSAMPLE_RATIO; j++)
-                              fSum[i] += thisMag.fBsBuffer[j][i];
+                              iSum[i] += thisMag.iBsBuffer[j][i];
                     }
                     // store axis k in buffer measurement l furthest from its mean
-                    ftmp = 0;
+                    itmp = 0;
                     for (i = CHX; i <= CHZ; i++)
                     {
                          for (j = 0; j < OVERSAMPLE_RATIO; j++)
                          {
-                              if (Math.abs(thisMag.fBsBuffer[j][i] * OVERSAMPLE_RATIO - fSum[i]) >= ftmp)
+                              if (Math.abs(thisMag.iBsBuffer[j][i] * OVERSAMPLE_RATIO - iSum[i]) >= itmp)
                               {
                                    k = i;
                                    l = j;
-                                   ftmp = Math.abs(thisMag.fBsBuffer[j][i] * OVERSAMPLE_RATIO - fSum[i]);
+                                   itmp = Math.abs(thisMag.iBsBuffer[j][i] * OVERSAMPLE_RATIO - iSum[i]);
                               }
                          }
                     }
@@ -130,7 +152,7 @@ public class FusionTask extends Types {
                          // use the one available measurement for averaging in this case
                          for (i = CHX; i <= CHZ; i++)
                          {
-                              thisMag.fBsAvg[i] = thisMag.fBsBuffer[0][i];
+                              thisMag.fBsAvg[i] = thisMag.iBsBuffer[0][i];
                          }
                     } // end of compute averages for OVERSAMPLE_RATIO = 1
                     else
@@ -138,11 +160,11 @@ public class FusionTask extends Types {
                          // sum all measurements ignoring channel k in measurement l
                          for (i = CHX; i <= CHZ; i++)
                          {
-                              fSum[i] = 0;
+                              iSum[i] = 0;
                               for (j = 0; j < OVERSAMPLE_RATIO; j++)
                               {
                                    if (!((i == k) && (j == l)))
-                                        fSum[i] += thisMag.fBsBuffer[j][i];
+                                        iSum[i] += thisMag.iBsBuffer[j][i];
                               }
                          }
                          // compute the average with nearest integer rounding
@@ -151,18 +173,18 @@ public class FusionTask extends Types {
                               if (i != k)
                               {
                                    // OVERSAMPLE_RATIO measurements were used
-                                   if (fSum[i] >= 0)
-                                        thisMag.fBsAvg[i] = ((fSum[i] + (OVERSAMPLE_RATIO >> 1)) / OVERSAMPLE_RATIO);
+                                   if (iSum[i] >= 0)
+                                        thisMag.iBsAvg[i] = ((iSum[i] + (OVERSAMPLE_RATIO >> 1)) / OVERSAMPLE_RATIO);
                                    else
-                                        thisMag.fBsAvg[i] = ((fSum[i] - (OVERSAMPLE_RATIO >> 1)) / OVERSAMPLE_RATIO);
+                                        thisMag.iBsAvg[i] = ((iSum[i] - (OVERSAMPLE_RATIO >> 1)) / OVERSAMPLE_RATIO);
                               }
                               else
                               {
                                    // OVERSAMPLE_RATIO - 1 measurements were used
-                                   if (fSum[i] >= 0)
-                                        thisMag.fBsAvg[i] = ((fSum[i] + ((OVERSAMPLE_RATIO - 1) >> 1)) / (OVERSAMPLE_RATIO - 1));
+                                   if (iSum[i] >= 0)
+                                        thisMag.iBsAvg[i] = ((iSum[i] + ((OVERSAMPLE_RATIO - 1) >> 1)) / (OVERSAMPLE_RATIO - 1));
                                    else
-                                        thisMag.fBsAvg[i] = ((fSum[i] - ((OVERSAMPLE_RATIO - 1) >> 1)) / (OVERSAMPLE_RATIO - 1));
+                                        thisMag.iBsAvg[i] = ((iSum[i] - ((OVERSAMPLE_RATIO - 1) >> 1)) / (OVERSAMPLE_RATIO - 1));
                               }
                          }
                     } // end of compute averages for OVERSAMPLE_RATIO = 1
@@ -179,9 +201,13 @@ public class FusionTask extends Types {
 
 
           // store in a buffer for later gyro integration by sensor fusion algorithms
-          thisGyro.fYs = y;
+          int ys[] = new int[3];
+          for (i = CHX; i <= CHZ; i++){
+               ys[i] = (int)(Math.toDegrees(y[i]) * thisGyro.iCountsPerDegPerSec);
+          }
+          thisGyro.iYs = ys;
           for (i = CHX; i <= CHZ; i++)
-               thisGyro.fYsBuffer[iCounter][i] = (float) Math.toDegrees(thisGyro.fYs[i]);
+               thisGyro.iYsBuffer[iCounter][i] = thisGyro.iYs[i] ;
 
           // every OVERSAMPLE_RATIO passes zero the decimation counter and enable the sensor fusion task
           if (iCounter++ == (OVERSAMPLE_RATIO - 1))
@@ -194,23 +220,12 @@ public class FusionTask extends Types {
 
      public void Fusion_task_init()
      {
-          thisSV_9DOF_GBY_KALMAN.resetflag = true;
-          thisSV_6DOF_GY_KALMAN.resetflag = true;
-
-          thisAccel.iCountsPerg = MMA8652_COUNTSPERG;
-          thisAccel.fgPerCount = 1.0F / MMA8652_COUNTSPERG;
-
-          thisAccel.iCountsPerDegPerSec = FXAS21002_COUNTSPERDEGPERSEC;
-          thisAccel.fDegPerSecPerCount = 1.0F / FXAS21002_COUNTSPERDEGPERSEC;
-
-          thisMag.iCountsPeruT = 1;
-          thisMag.fCountsPeruT = (float)1;
-          thisMag.fuTPerCount = 1.0F / 1;
-
           RdSensData_task_init();
-          if(EnableMag)
+          if(EnableMag){
                Magnetic.fInitMagCalibration(thisMagCal, thisMagBuffer);
-          //Fusion.fInit_9DOF_GBY_KALMAN(thisSV_9DOF_GBY_KALMAN, thisAccel,thisMag,thisMagCal);
+          }else {
+
+          }
      }
 
      public boolean Fusion_Task(float g[],float m[],float y[])

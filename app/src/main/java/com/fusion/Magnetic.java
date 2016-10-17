@@ -1,5 +1,7 @@
 package com.fusion;
 
+import android.util.Log;
+
 import com.fusion.types.MagCalibration;
 import com.fusion.types.MagSensor;
 import com.fusion.types.MagneticBuffer;
@@ -13,16 +15,19 @@ import com.fusion.types.Types;
 
 public class Magnetic extends Types {
 
+    private static boolean D = true;
+    private static String TAG = "Magnetic";
 
     // function resets the magnetometer buffer and magnetic calibration
     static void fInitMagCalibration(MagCalibration pthisMagCal,  MagneticBuffer pthisMagBuffer)
     {
+        if(D) Log.d(TAG,"fInitMagCalibration");
         int j, k;	// loop counters
 
         // initialize the calibration hard and soft iron estimate to null
         Matrix.f3x3matrixAeqI(pthisMagCal.finvW);
         pthisMagCal.fV[CHX] = pthisMagCal.fV[CHY] = pthisMagCal.fV[CHZ] = 0.0F;
-        //pthisMagCal.fB = DEFAULTB;
+        pthisMagCal.fB = DEFAULTB;
         pthisMagCal.fFitErrorpc = 1000.0F;
         pthisMagCal.iValidMagCal = 0;
         pthisMagCal.iCalInProgress = false;
@@ -52,8 +57,9 @@ public class Magnetic extends Types {
 
     // function updates the magnetic measurement buffer with most recent magnetic data (typically 200Hz)
 // the uncalibrated measurements iBs are stored in the buffer but the calibrated measurements iBc are used for indexing.
-    void iUpdateMagnetometerBuffer(MagneticBuffer pthisMagBuffer, MagSensor pthisMag, int loopcounter)
+    static void iUpdateMagnetometerBuffer(MagneticBuffer pthisMagBuffer, MagSensor pthisMag, int loopcounter)
     {
+        if(D) Log.d(TAG,"iUpdateMagnetometerBuffer");
         // local variables
         int idelta;					// absolute vector distance
         int i;						// counter
@@ -62,16 +68,16 @@ public class Magnetic extends Types {
         boolean itooclose;					// flag denoting measurement is too close to existing ones
 
         // calculate the magnetometer buffer bins from the tangent ratios
-        if (pthisMag.fBcAvg[CHZ] == 0) return;
-        itanj = (100 * (int)pthisMag.fBcAvg[CHX]) / ((int)pthisMag.fBcAvg[CHZ]);
-        itank = (100 * (int)pthisMag.fBcAvg[CHY]) / ((int)pthisMag.fBcAvg[CHZ]);
+        if (pthisMag.iBcAvg[CHZ] == 0) return;
+        itanj = (100 * (int)pthisMag.iBcAvg[CHX]) / ((int)pthisMag.iBcAvg[CHZ]);
+        itank = (100 * (int)pthisMag.iBcAvg[CHY]) / ((int)pthisMag.iBcAvg[CHZ]);
         // map tangent ratios to bins j and k using equal angle bins: C guarantees left to right execution of the test
         // and add an offset of MAGBUFFSIZEX bins to k to mimic atan2 on this ratio
         // j will vary from 0 to MAGBUFFSIZEX - 1 and k from 0 to 2 * MAGBUFFSIZEX - 1
         j = k = 0;
         while ((j < (MAGBUFFSIZEX - 1) && (itanj >= pthisMagBuffer.tanarray[j]))) j++;
         while ((k < (MAGBUFFSIZEX - 1) && (itank >= pthisMagBuffer.tanarray[k]))) k++;
-        if (pthisMag.fBcAvg[CHX] < 0) k += MAGBUFFSIZEX;
+        if (pthisMag.iBcAvg[CHX] < 0) k += MAGBUFFSIZEX;
 
         // case 1: buffer is full and this bin has a measurement: over-write without increasing number of measurements
         // this is the most common option at run time
@@ -80,7 +86,7 @@ public class Magnetic extends Types {
             // store the fast (unaveraged at typically 200Hz) integer magnetometer reading into the buffer bin j, k
             for (i = CHX; i <= CHZ; i++)
             {
-                pthisMagBuffer.fBs[i][j][k] = pthisMag.fBs[i];
+                pthisMagBuffer.iBs[i][j][k] = pthisMag.iBs[i];
             }
             pthisMagBuffer.index[j][k] = loopcounter;
             return;
@@ -93,7 +99,7 @@ public class Magnetic extends Types {
             // store the fast (unaveraged at typically 200Hz) integer magnetometer reading into the buffer bin j, k
             for (i = CHX; i <= CHZ; i++)
             {
-                pthisMagBuffer.fBs[i][j][k] = pthisMag.fBs[i];
+                pthisMagBuffer.iBs[i][j][k] = pthisMag.iBs[i];
             }
             pthisMagBuffer.index[j][k] = loopcounter;
 
@@ -131,7 +137,7 @@ public class Magnetic extends Types {
             // store the fast (unaveraged at typically 200Hz) integer magnetometer reading into the buffer bin j, k
             for (i = CHX; i <= CHZ; i++)
             {
-                pthisMagBuffer.fBs[i][j][k] = pthisMag.fBs[i];
+                pthisMagBuffer.iBs[i][j][k] = pthisMag.iBs[i];
             }
             pthisMagBuffer.index[j][k] = loopcounter;
             (pthisMagBuffer.iMagBufferCount)++;
@@ -146,7 +152,7 @@ public class Magnetic extends Types {
             idelta = 0;
             for (i = CHX; i <= CHZ; i++)
             {
-                idelta += Math.abs((int)pthisMag.fBs[i] - (int)pthisMagBuffer.fBs[i][j][k]);
+                idelta += Math.abs((int)pthisMag.iBs[i] - (int)pthisMagBuffer.iBs[i][j][k]);
             }
             // check to see if the current reading is close to this existing magnetic buffer entry
             if (idelta < MESHDELTACOUNTS)
@@ -154,7 +160,7 @@ public class Magnetic extends Types {
                 // simply over-write the measurement and return
                 for (i = CHX; i <= CHZ; i++)
                 {
-                    pthisMagBuffer.fBs[i][j][k] = pthisMag.fBs[i];
+                    pthisMagBuffer.iBs[i][j][k] = pthisMag.iBs[i];
                 }
                 pthisMagBuffer.index[j][k] = loopcounter;
             }
@@ -179,7 +185,7 @@ public class Magnetic extends Types {
                             idelta = 0;
                             for (i = CHX; i <= CHZ; i++)
                             {
-                                idelta += Math.abs((int) pthisMag.fBs[i] - (int) pthisMagBuffer.fBs[i][j][k]);
+                                idelta += Math.abs((int) pthisMag.iBs[i] - (int) pthisMagBuffer.iBs[i][j][k]);
                             }
                             // check to see if the current reading is close to this existing magnetic buffer entry
                             if (idelta < MESHDELTACOUNTS)
@@ -205,7 +211,7 @@ public class Magnetic extends Types {
                 {
                     for (i = CHX; i <= CHZ; i++)
                     {
-                        pthisMagBuffer.fBs[i][l][m] = pthisMag.fBs[i];
+                        pthisMagBuffer.iBs[i][l][m] = pthisMag.iBs[i];
                     }
                     pthisMagBuffer.index[l][m] = loopcounter;
                     (pthisMagBuffer.iMagBufferCount)++;
@@ -215,11 +221,12 @@ public class Magnetic extends Types {
         } // end case 4
 
         // this line should be unreachable
-        return;
+        //return;
     }
     // function maps the uncalibrated magnetometer data fBsAvg (uT) onto calibrated averaged data fBcAvg (uT), iBcAvg (counts)
     public static void fInvertMagCal(MagSensor pthisMag, MagCalibration pthisMagCal)
     {
+        if(D) Log.d(TAG,"fInvertMagCal");
         // local variables
         float ftmp[] = new float[3];					// temporary array
         int i; 						// loop counter
@@ -237,7 +244,7 @@ public class Magnetic extends Types {
             for (i = CHX; i <= CHZ; i++)
             {
                 pthisMag.fBcAvg[i] = pthisMagCal.finvW[i][CHX] * ftmp[CHX] + pthisMagCal.finvW[i][CHY] * ftmp[CHY] + pthisMagCal.finvW[i][CHZ] * ftmp[CHZ];
-                //pthisMag.iBcAvg[i] = (int) (pthisMag.fBcAvg[i] * pthisMag.fCountsPeruT);
+                pthisMag.iBcAvg[i] = (int) (pthisMag.fBcAvg[i] * pthisMag.fCountsPeruT);
             }
         }
         else
@@ -246,7 +253,7 @@ public class Magnetic extends Types {
             for (i = CHX; i <= CHZ; i++)
             {
                 pthisMag.fBcAvg[i] = pthisMag.fBsAvg[i];
-                //pthisMag.iBcAvg[i] = pthisMag.iBsAvg[i];
+                pthisMag.iBcAvg[i] = pthisMag.iBsAvg[i];
             }
         }
 
@@ -256,6 +263,7 @@ public class Magnetic extends Types {
     // function runs the magnetic calibration
     static void fRunMagCalibration(MagCalibration pthisMagCal, MagneticBuffer pthisMagBuffer, MagSensor pthisMag)
     {
+        if(D) Log.d(TAG,"fRunMagCalibration");
         int i, j;			// loop counters
         int isolver;		// magnetic solver used
 
@@ -323,18 +331,19 @@ public class Magnetic extends Types {
         // reset the calibration in progress flag to allow writing to the magnetic buffer
         pthisMagCal.iCalInProgress = false;
 
-        return;
+        //return;
     }
 
     // 4 element calibration using 4x4 matrix inverse
     static void fUpdateCalibration4INV(MagCalibration pthisMagCal, MagneticBuffer pthisMagBuffer, MagSensor pthisMag)
     {
+        if(D) Log.d(TAG,"fUpdateCalibration4INV");
         // local variables
         float fBs2;								// fBs[CHX]^2+fBs[CHY]^2+fBs[CHZ]^2
         float fSumBs4;							// sum of fBs2
-        //float fscaling;							// set to FUTPERCOUNT * FMATRIXSCALING
+        float fscaling;							// set to FUTPERCOUNT * FMATRIXSCALING
         float fE;								// error function = r^T.r
-        float fOffset[] = new float[3];						// offset to remove large DC hard iron bias in matrix
+        int iOffset[] = new int[3];						// offset to remove large DC hard iron bias in matrix
         int iCount;							// number of measurements counted
         boolean ierror[] = new boolean[1];							// matrix inversion error flag
         int i, j, k, l;						// loop counters
@@ -345,7 +354,7 @@ public class Magnetic extends Types {
         int iPivot[] = new int[4];
 
         // compute fscaling to reduce multiplications later
-        //fscaling = pthisMag.fuTPerCount / DEFAULTB;
+        fscaling = pthisMag.fuTPerCount / DEFAULTB;
 
         // the trial inverse soft iron matrix invW always equals the identity matrix for 4 element calibration
         Matrix.f3x3matrixAeqI(pthisMagCal.ftrinvW);
@@ -362,7 +371,7 @@ public class Magnetic extends Types {
         }
 
         // the offsets are guaranteed to be set from the first element but to avoid compiler error
-        fOffset[CHX] = fOffset[CHY] = fOffset[CHZ] = 0;
+        iOffset[CHX] = iOffset[CHY] = iOffset[CHZ] = 0;
 
         // use entries from magnetic buffer to compute matrices
         iCount = 0;
@@ -377,14 +386,14 @@ public class Magnetic extends Types {
                     {
                         for (l = CHX; l <= CHZ; l++)
                         {
-                            fOffset[l] = pthisMagBuffer.fBs[l][j][k];
+                            iOffset[l] = pthisMagBuffer.iBs[l][j][k];
                         }
                     }
 
                     // store scaled and offset fBs[XYZ] in fvecA[0-2] and fBs[XYZ]^2 in fvecA[3-5]
                     for (l = CHX; l <= CHZ; l++)
                     {
-                        pthisMagCal.fvecA[l] = pthisMagBuffer.fBs[l][j][k] - fOffset[l];
+                        pthisMagCal.fvecA[l] = pthisMagBuffer.iBs[l][j][k] - iOffset[l];
                         pthisMagCal.fvecA[l + 3] = pthisMagCal.fvecA[l] * pthisMagCal.fvecA[l];
                     }
 
@@ -437,9 +446,9 @@ public class Magnetic extends Types {
 
         // calculate in situ inverse of fmatB = inv(X^T.X) (4x4) while fmatA still holds X^T.X
         //for (i = 0; i < 4; i++)
-        {
+        //{
             pfRows = pthisMagCal.fmatB;
-        }
+        //}
         Matrix.fmatrixAeqInvA(pfRows, iColInd, iRowInd, iPivot, 4, ierror);
 
         // calculate fvecA = solution beta (4x1) = inv(X^T.X).X^T.Y = fmatB * fvecB
@@ -495,32 +504,32 @@ public class Magnetic extends Types {
         // correct the hard iron estimate for FMATRIXSCALING and the offsets applied (result in uT)
         for (l = CHX; l <= CHZ; l++)
         {
-            //pthisMagCal.ftrV[l] = pthisMagCal.ftrV[l] * DEFAULTB + (float)iOffset[l] * pthisMag.fuTPerCount;
-            pthisMagCal.ftrV[l] = pthisMagCal.ftrV[l] + fOffset[l];
+            pthisMagCal.ftrV[l] = pthisMagCal.ftrV[l] * DEFAULTB + (float)iOffset[l] * pthisMag.fuTPerCount;
         }
 
         // correct the geomagnetic field strength B to correct scaling (result in uT)
-        //pthisMagCal.ftrB *= DEFAULTB;
+        pthisMagCal.ftrB *= DEFAULTB;
 
-        return;
+        //return;
     }
 
     // 7 element calibration using direct eigen-decomposition
     static void fUpdateCalibration7EIG(MagCalibration pthisMagCal, MagneticBuffer pthisMagBuffer, MagSensor pthisMag)
     {
+        if(D) Log.d(TAG,"fUpdateCalibration7EIG");
         // local variables
         float det;								// matrix determinant
-        //float fscaling;							// set to FUTPERCOUNT * FMATRIXSCALING
+        float fscaling;							// set to FUTPERCOUNT * FMATRIXSCALING
         float ftmp;								// scratch variable
-        float fOffset[] = new float[3];						// offset to remove large DC hard iron bias
+        int iOffset[] = new int[3];						// offset to remove large DC hard iron bias
         int iCount;							// number of measurements counted
         int i, j, k, l, m, n;					// loop counters
 
         // compute fscaling to reduce multiplications later
-        //fscaling = pthisMag.fuTPerCount / DEFAULTB;
+        fscaling = pthisMag.fuTPerCount / DEFAULTB;
 
         // the offsets are guaranteed to be set from the first element but to avoid compiler error
-        fOffset[CHX] = fOffset[CHY] = fOffset[CHZ] = 0;
+        iOffset[CHX] = iOffset[CHY] = iOffset[CHZ] = 0;
 
         // zero the on and above diagonal elements of the 7x7 symmetric measurement matrix fmatA
         for (m = 0; m < 7; m++)
@@ -544,15 +553,14 @@ public class Magnetic extends Types {
                     {
                         for (l = CHX; l <= CHZ; l++)
                         {
-                            fOffset[l] = pthisMagBuffer.fBs[l][j][k];
+                            iOffset[l] = pthisMagBuffer.iBs[l][j][k];
                         }
                     }
 
                     // apply the offset and scaling and store in fvecA
                     for (l = CHX; l <= CHZ; l++)
                     {
-                        //pthisMagCal.fvecA[l + 3] = (float)((int)pthisMagBuffer.iBs[l][j][k] - (int32)iOffset[l]) * fscaling;
-                        pthisMagCal.fvecA[l + 3] = pthisMagBuffer.fBs[l][j][k] - fOffset[l];
+                        pthisMagCal.fvecA[l + 3] = (float)(pthisMagBuffer.iBs[l][j][k] - iOffset[l]) * fscaling;
                         pthisMagCal.fvecA[l] = pthisMagCal.fvecA[l + 3] * pthisMagCal.fvecA[l + 3];
                     }
 
@@ -647,7 +655,7 @@ public class Magnetic extends Types {
         for (l = CHX; l <= CHZ; l++)
         {
             pthisMagCal.ftrinvW[l][l] = (float) Math.sqrt(Math.abs(pthisMagCal.fA[l][l]));
-            pthisMagCal.ftrV[l] = pthisMagCal.ftrV[l] * DEFAULTB + fOffset[l] * pthisMag.fuTPerCount;
+            pthisMagCal.ftrV[l] = pthisMagCal.ftrV[l] * DEFAULTB + (float)iOffset[l] * pthisMag.fuTPerCount;
         }
 
         //return;
@@ -656,19 +664,20 @@ public class Magnetic extends Types {
     // 10 element calibration using direct eigen-decomposition
     static void fUpdateCalibration10EIG(MagCalibration pthisMagCal, MagneticBuffer pthisMagBuffer, MagSensor pthisMag)
     {
+        if(D) Log.d(TAG,"fUpdateCalibration10EIG");
         // local variables
         float det;								// matrix determinant
-        //float fscaling;							// set to FUTPERCOUNT * FMATRIXSCALING
+        float fscaling;							// set to FUTPERCOUNT * FMATRIXSCALING
         float ftmp;								// scratch variable
-        float fOffset[] = new float[3];						// offset to remove large DC hard iron bias in matrix
+        int iOffset[] = new int[3];						// offset to remove large DC hard iron bias in matrix
         int iCount;							// number of measurements counted
         int i, j, k, l, m, n;					// loop counters
 
         // compute fscaling to reduce multiplications later
-        //fscaling = pthisMag.fuTPerCount / DEFAULTB;
+        fscaling = pthisMag.fuTPerCount / DEFAULTB;
 
         // the offsets are guaranteed to be set from the first element but to avoid compiler error
-        fOffset[CHX] = fOffset[CHY] = fOffset[CHZ] = 0;
+        iOffset[CHX] = iOffset[CHY] = iOffset[CHZ] = 0;
 
         // zero the on and above diagonal elements of the 10x10 symmetric measurement matrix fmatA
         for (m = 0; m < 10; m++)
@@ -692,15 +701,14 @@ public class Magnetic extends Types {
                     {
                         for (l = CHX; l <= CHZ; l++)
                         {
-                            fOffset[l] = pthisMagBuffer.fBs[l][j][k];
+                            iOffset[l] = pthisMagBuffer.iBs[l][j][k];
                         }
                     }
 
                     // apply the fixed offset and scaling and enter into fvecA[6-8]
                     for (l = CHX; l <= CHZ; l++)
                     {
-                        //pthisMagCal.fvecA[l + 6] = (float)((int32)pthisMagBuffer.iBs[l][j][k] - (int32)iOffset[l]) * fscaling;
-                        pthisMagCal.fvecA[l + 6] = pthisMagBuffer.fBs[l][j][k] - fOffset[l];
+                        pthisMagCal.fvecA[l + 6] = (float)((int)pthisMagBuffer.iBs[l][j][k] - (int)iOffset[l]) * fscaling;
                     }
 
                     // compute measurement vector elements fvecA[0-5] from fvecA[6-8]
@@ -808,7 +816,7 @@ public class Magnetic extends Types {
         // correct for the measurement matrix offset and scaling and get the computed hard iron offset in uT
         for (l = CHX; l <= CHZ; l++)
         {
-            pthisMagCal.ftrV[l] = pthisMagCal.ftrV[l] * DEFAULTB + (float)fOffset[l] * pthisMag.fuTPerCount;
+            pthisMagCal.ftrV[l] = pthisMagCal.ftrV[l] * DEFAULTB + (float)iOffset[l] * pthisMag.fuTPerCount;
         }
 
         // convert the trial geomagnetic field strength B into uT for un-normalized soft iron matrix A
