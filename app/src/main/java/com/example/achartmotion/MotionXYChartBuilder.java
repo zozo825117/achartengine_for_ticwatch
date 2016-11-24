@@ -155,6 +155,10 @@ public class MotionXYChartBuilder extends Activity {
 
     private boolean UsedFusion;
 
+    float interval;
+    float fin_vel[] = new float[3];
+    float init_vel[] = new float[3];
+    float distance[] = new float[3];
 
      final int SensorDelay = SensorManager.SENSOR_DELAY_FASTEST; //SENSOR_DELAY_UI
 
@@ -428,6 +432,8 @@ public class MotionXYChartBuilder extends Activity {
                         accelerometerValues = null;
                         GyroscopeValues = null;
                         fusiontask.Fusion_task_init();
+
+                        init_vel[0] = init_vel[1] = init_vel[2] = 0;
 
                         enableAccWave();
                         enableOrientationWave();
@@ -1174,11 +1180,22 @@ public class MotionXYChartBuilder extends Activity {
                                 timestamp = sensorEvent.timestamp;
                             //if(M) Log.d(TAG, str1 + str3);//str1
 
+                            //interval=timestamp/(1E9F); 	//nanosecond to seconds
+                            interval=1.677E-2F; 	//nanosecond to seconds
+
+                            for(int i=0;i<3;i++)
+                            {
+                                fin_vel[i] = init_vel[i] + (fusiontask.thisSV_6DOF_GY_KALMAN.fAccGl[i] * sm.GRAVITY_EARTH *interval);
+                                distance[i] += (init_vel[i]*interval)+0.5f*fusiontask.thisSV_6DOF_GY_KALMAN.fAccGl[i]* sm.GRAVITY_EARTH *interval*interval;
+                                init_vel[i] = fin_vel[i];
+                            }
+
                             waveUpdataRoutine(Sensor.TYPE_LINEAR_ACCELERATION,fusiontask.thisSV_6DOF_GY_KALMAN.fAccGl[0],
                                     fusiontask.thisSV_6DOF_GY_KALMAN.fAccGl[1], fusiontask.thisSV_6DOF_GY_KALMAN.fAccGl[2]);
 
-                            waveUpdataRoutine(Sensor.TYPE_ORIENTATION,fusiontask.thisSV_6DOF_GY_KALMAN.fPhiPl/100,
-                                    fusiontask.thisSV_6DOF_GY_KALMAN.fThePl/100,fusiontask.thisSV_6DOF_GY_KALMAN.fPsiPl/100);
+/*                            waveUpdataRoutine(Sensor.TYPE_ORIENTATION,fusiontask.thisSV_6DOF_GY_KALMAN.fPhiPl/100,
+                                    fusiontask.thisSV_6DOF_GY_KALMAN.fThePl/100,fusiontask.thisSV_6DOF_GY_KALMAN.fPsiPl/100);*/
+                            waveUpdataRoutine(Sensor.TYPE_ORIENTATION,fin_vel[0],fin_vel[1],fin_vel[2]);
 
 /*                            waveUpdataRoutine(Sensor.TYPE_ORIENTATION,fusiontask.thisAccel.fGsAvg[0],fusiontask.thisAccel.fGsAvg[1],
                                     fusiontask.thisAccel.fGsAvg[2]);*/
