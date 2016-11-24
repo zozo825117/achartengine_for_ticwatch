@@ -439,6 +439,9 @@ public class MotionXYChartBuilder extends Activity {
                         enableOrientationWave();
                         break;
                     }
+                    case 9:{
+
+                    }
                     default:
                         break;
                 }
@@ -502,6 +505,9 @@ public class MotionXYChartBuilder extends Activity {
                         accelerometerValues = null;
                         GyroscopeValues = null;
                         break;
+                    }
+                    case 9:{
+
                     }
                     default:
                         break;
