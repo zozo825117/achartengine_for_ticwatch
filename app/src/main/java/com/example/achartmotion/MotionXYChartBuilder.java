@@ -153,7 +153,7 @@ public class MotionXYChartBuilder extends Activity {
     private float magneticFieldValues[] = new float[3];
     private float GyroscopeValues[] = new float[3];
 
-    private boolean UsedFusion;
+    private boolean UsedFusion,mEnableWave1to6=false;
 
     float interval;
     float fin_vel[] = new float[3];
@@ -368,148 +368,15 @@ public class MotionXYChartBuilder extends Activity {
         mEnableButton.setOnClickListener(new View.OnClickListener() {
             public void onClick(View v) {
                 if (D) Log.i(TAG, "mEnableButton onClick");
-                int x = 0;
-                try {
-                    x = Integer.parseInt(mSeries.getText().toString());
-                } catch (NumberFormatException e) {
-                    mSeries.requestFocus();
-                    return;
-                }
-
-                // add a new data point to the current series
-                switch (x) {
-                    case 1:
-                        if(EnableSerise1) {
-                            datarenderer1.setColor(SeriesColor[1]);
-                        }else {
-                            enableAccWave();
-                        }
-                        break;
-                    case 2:
-                        if(EnableSerise1) {
-                            datarenderer2.setColor(SeriesColor[2]);
-                        }else {
-                            enableAccWave();
-                        }
-                        break;
-                    case 3:{
-                        if(EnableSerise1) {
-                            datarenderer3.setColor(SeriesColor[3]);
-                        }else {
-                            enableAccWave();
-                        }
-                        break;
-                    }
-                    case 4:{
-                        if(EnableSerise4) {
-                            datarenderer4.setColor(SeriesColor[4]);
-                        }else {
-                            if(EnableSerise1)enableOrientationWave();
-                        }
-                    }
-                    case 5:{
-                        if(EnableSerise4) {
-                            datarenderer5.setColor(SeriesColor[5]);
-                        }else {
-                            if(EnableSerise1)enableOrientationWave();
-                        }
-                    }
-                    case 6:{
-                        if(EnableSerise4) {
-                            datarenderer6.setColor(SeriesColor[6]);
-                        }else {
-                            if(EnableSerise1)enableOrientationWave();
-                        }
-                        break;
-                    }
-                    case 8:{
-                        UsedFusion = true;
-                        sm.registerListener(myAccelerometerListener, sm.getDefaultSensor(Sensor.TYPE_ACCELEROMETER), SensorDelay);
-                        if(fusiontask.EnableMag)
-                            sm.registerListener(myAccelerometerListener, sm.getDefaultSensor(Sensor.TYPE_MAGNETIC_FIELD), SensorDelay);
-                        sm.registerListener(myAccelerometerListener, sm.getDefaultSensor(Sensor.TYPE_GYROSCOPE), SensorDelay);
-                        magneticFieldValues = null;
-                        accelerometerValues = null;
-                        GyroscopeValues = null;
-                        fusiontask.Fusion_task_init();
-
-                        init_vel[0] = init_vel[1] = init_vel[2] = 0;
-
-                        enableAccWave();
-                        enableOrientationWave();
-                        break;
-                    }
-                    default:
-                        break;
-                }
-
-                mStopButton.setText(R.string.stop_button);
-                mSaveButton.setEnabled(false);
-
-                //
-                mSeries.setText("");
-                mSeries.requestFocus();
-                // repaint the chart such as the newly added point to be visible
-                mChartView.repaint();
+                EnableButtonClick();
 
             }
         });
 
         mDisableButton.setOnClickListener(new View.OnClickListener() {
             public void onClick(View v) {
-                if (D) {
-                    Log.i(TAG, "mEnableButton onClick");
-                }
-                int x = 0;
-
-                try {
-                    x = Integer.parseInt(mSeries.getText().toString());
-                } catch (NumberFormatException e) {
-                    mSeries.requestFocus();
-                    return;
-                }
-
-                // add a new data point to the current series
-                switch (x) {
-                    case 1:{
-                        datarenderer1.setColor(SeriesColor[0]);
-                        break;
-                    }
-                    case 2:{
-                        datarenderer2.setColor(SeriesColor[0]);
-                        break;
-                    }
-                    case 3:{
-                        datarenderer3.setColor(SeriesColor[0]);
-                        break;
-                    }
-                    case 4:{
-                        datarenderer4.setColor(SeriesColor[0]);
-                        break;
-                    }
-                    case 5:{
-                        datarenderer5.setColor(SeriesColor[0]);
-                        break;
-                    }
-                    case 6:{
-                        datarenderer6.setColor(SeriesColor[0]);
-                        break;
-                    }
-                    case 8:{
-                        UsedFusion = false;
-                        sm.unregisterListener(myAccelerometerListener);
-                        magneticFieldValues = null;
-                        accelerometerValues = null;
-                        GyroscopeValues = null;
-                        break;
-                    }
-                    default:
-                        break;
-                }
-                mSeries.setText("");
-                mSeries.requestFocus();
-                // repaint the chart such as the newly added point to be visible
-                mChartView.repaint();
+                if (D) Log.i(TAG, "mEnableButton onClick");
+                DisableButtonClick();
             }
         });
 
@@ -519,6 +386,7 @@ public class MotionXYChartBuilder extends Activity {
                 if (mStopButton.getText().toString().equals(getString(R.string.stop_button))) {
                     //stopTimer();
                     sm.unregisterListener(myAccelerometerListener);
+                    mEnableWave1to6 = false;
                     mStopButton.setText(R.string.start_button);
                     mSaveButton.setEnabled(true);
                 } else if (mStopButton.getText().toString().equals("START")) {
@@ -544,56 +412,7 @@ public class MotionXYChartBuilder extends Activity {
 
         mSaveButton.setOnClickListener(new View.OnClickListener() {
             public void onClick(View v) {
-                    sm.unregisterListener(myAccelerometerListener);
-                    mStopButton.setText(R.string.start_button);
-
-                // save
-                if (requestPermission()) {
-
-                    if(D)Log.i(TAG, "getSDPath" + FileStoreTools.getSDPath());
-                    //
-                    String str[] = new String[1000];
-                    //Get the text file based on folder
-
-                    File file = new File(FileStoreTools.getSDPath() + File.separator + "zozo_file");
-                    if(D)Log.i(TAG, "file full = " + file + "file path=" + file.getAbsolutePath());
-
-                    //x_index
-                    String save_str;
-                    for (double i = 0, j = 0; i < x_index; i++) {
-                        double y;
-
-                        save_str = "";
-
-                        if(i > Serise1StartIndex){
-                            save_str = saveStringFormat(xyseries1 , (int)i);
-                            save_str = save_str + saveStringFormat(xyseries2 , (int)(i));
-                            save_str = save_str + saveStringFormat(xyseries3 , (int)(i));
-
-                        }
-                        if(i > Serise2StartIndex)
-                        {
-                            save_str = save_str + saveStringFormat(xyseries4 , (int)(i-Serise2StartIndex));
-                            save_str = save_str + saveStringFormat(xyseries5 , (int)(i-Serise2StartIndex));
-                            save_str = save_str + saveStringFormat(xyseries6 , (int)(i-Serise2StartIndex));
-                        }
-
-                        if(D)Log.i(TAG, "save str="+ save_str);
-
-                        FileStoreTools.saveFile(save_str, file.getPath(), "_motion_xy_char.txt");
-                    }
-                    if(D)Log.i(TAG, "saveFile has done");
-                }
-                if (mDataset != null) {
-                    mDataset.clear();
-                    mChartView.repaint();
-                    xyseries1.clear();
-                    xyseries2.clear();
-                    xyseries3.clear();
-                    xyseries4.clear();
-                    xyseries5.clear();
-                    xyseries6.clear();
-                }
+                SaveButtonClick();
             }
         });
 
@@ -763,7 +582,242 @@ public class MotionXYChartBuilder extends Activity {
             mChartView.repaint();
         }
     }
+    void EnableButtonClick()
+    {
+        int x = 0;
+        try {
+            x = Integer.parseInt(mSeries.getText().toString());
+        } catch (NumberFormatException e) {
+            mSeries.requestFocus();
+            return;
+        }
 
+        // add a new data point to the current series
+        switch (x) {
+            case 1:
+            case 2:
+            case 3:
+            case 4:
+            case 5:
+            case 6:
+                EnableWave1to6(x);
+                break;
+            case 8:{
+                EnableWaveFusion();
+                break;
+            }
+            default:
+                break;
+        }
+
+        mStopButton.setText(R.string.stop_button);
+        mSaveButton.setEnabled(false);
+
+        //
+        mSeries.setText("");
+        mSeries.requestFocus();
+        // repaint the chart such as the newly added point to be visible
+        mChartView.repaint();
+    }
+    void DisableButtonClick()
+    {
+        int x = 0;
+
+        try {
+            x = Integer.parseInt(mSeries.getText().toString());
+        } catch (NumberFormatException e) {
+            mSeries.requestFocus();
+            return;
+        }
+
+        // add a new data point to the current series
+        switch (x) {
+            case 1:
+            case 2:
+            case 3:
+            case 4:
+            case 5:
+            case 6:
+                    DisableWave1to6(x);
+                break;
+
+            case 8:{
+                    DisableWaveFusion();
+                break;
+            }
+            default:
+                break;
+        }
+        mSeries.setText("");
+        mSeries.requestFocus();
+        // repaint the chart such as the newly added point to be visible
+        mChartView.repaint();
+    }
+    void SaveButtonClick()
+    {
+        sm.unregisterListener(myAccelerometerListener);
+        mStopButton.setText(R.string.start_button);
+
+        // save
+        if (requestPermission()) {
+
+            if(D)Log.i(TAG, "getSDPath" + FileStoreTools.getSDPath());
+            //
+            String str[] = new String[1000];
+            //Get the text file based on folder
+
+            File file = new File(FileStoreTools.getSDPath() + File.separator + "zozo_file");
+            if(D)Log.i(TAG, "file full = " + file + "file path=" + file.getAbsolutePath());
+
+            //x_index
+            String save_str;
+            for (double i = 0, j = 0; i < x_index; i++) {
+                double y;
+
+                save_str = "";
+
+                if(i > Serise1StartIndex){
+                    save_str = saveStringFormat(xyseries1 , (int)i);
+                    save_str = save_str + saveStringFormat(xyseries2 , (int)(i));
+                    save_str = save_str + saveStringFormat(xyseries3 , (int)(i));
+
+                }
+                if(i > Serise2StartIndex)
+                {
+                    save_str = save_str + saveStringFormat(xyseries4 , (int)(i-Serise2StartIndex));
+                    save_str = save_str + saveStringFormat(xyseries5 , (int)(i-Serise2StartIndex));
+                    save_str = save_str + saveStringFormat(xyseries6 , (int)(i-Serise2StartIndex));
+                }
+
+                if(D)Log.i(TAG, "save str="+ save_str);
+
+                FileStoreTools.saveFile(save_str, file.getPath(), "_motion_xy_char.txt");
+            }
+            if(D)Log.i(TAG, "saveFile has done");
+        }
+        if (mDataset != null) {
+            mDataset.clear();
+            mChartView.repaint();
+            xyseries1.clear();
+            xyseries2.clear();
+            xyseries3.clear();
+            xyseries4.clear();
+            xyseries5.clear();
+            xyseries6.clear();
+        }
+    }
+    void EnableWave1to6(int x)
+    {
+        switch (x) {
+            case 1:
+                if (EnableSerise1) {
+                    datarenderer1.setColor(SeriesColor[1]);
+                } else {
+                    enableAccWave();
+                }
+                break;
+            case 2:
+                if (EnableSerise1) {
+                    datarenderer2.setColor(SeriesColor[2]);
+                } else {
+                    enableAccWave();
+                }
+                break;
+            case 3: {
+                if (EnableSerise1) {
+                    datarenderer3.setColor(SeriesColor[3]);
+                } else {
+                    enableAccWave();
+
+                }
+                break;
+            }
+            case 4: {
+                if (EnableSerise4) {
+                    datarenderer4.setColor(SeriesColor[4]);
+                } else {
+                    if (EnableSerise1) enableOrientationWave();
+                }
+                break;
+            }
+            case 5: {
+                if (EnableSerise4) {
+                    datarenderer5.setColor(SeriesColor[5]);
+                } else {
+                    if (EnableSerise1) enableOrientationWave();
+                }
+                break;
+            }
+            case 6: {
+                if (EnableSerise4) {
+                    datarenderer6.setColor(SeriesColor[6]);
+                } else {
+                    if (EnableSerise1) enableOrientationWave();
+                }
+                break;
+            }
+            default:
+                break;
+        }
+
+    }
+    void DisableWave1to6(int x)
+    {
+        // add a new data point to the current series
+        switch (x) {
+            case 1: {
+                datarenderer1.setColor(SeriesColor[0]);
+                break;
+            }
+            case 2: {
+                datarenderer2.setColor(SeriesColor[0]);
+                break;
+            }
+            case 3: {
+                datarenderer3.setColor(SeriesColor[0]);
+                break;
+            }
+            case 4: {
+                datarenderer4.setColor(SeriesColor[0]);
+                break;
+            }
+            case 5: {
+                datarenderer5.setColor(SeriesColor[0]);
+                break;
+            }
+            case 6: {
+                datarenderer6.setColor(SeriesColor[0]);
+                break;
+            }
+            default:
+                break;
+        }
+    }
+    void EnableWaveFusion()
+    {
+        UsedFusion = true;
+        sm.registerListener(myAccelerometerListener, sm.getDefaultSensor(Sensor.TYPE_ACCELEROMETER), SensorDelay);
+        if(fusiontask.EnableMag)
+            sm.registerListener(myAccelerometerListener, sm.getDefaultSensor(Sensor.TYPE_MAGNETIC_FIELD), SensorDelay);
+        sm.registerListener(myAccelerometerListener, sm.getDefaultSensor(Sensor.TYPE_GYROSCOPE), SensorDelay);
+        magneticFieldValues = null;
+        accelerometerValues = null;
+        GyroscopeValues = null;
+        fusiontask.Fusion_task_init();
+
+        init_vel[0] = init_vel[1] = init_vel[2] = 0;
+
+        enableAccWave();
+        enableOrientationWave();
+    }
+    void DisableWaveFusion()
+    {
+        UsedFusion = false;
+        sm.unregisterListener(myAccelerometerListener);
+        magneticFieldValues = null;
+        accelerometerValues = null;
+        GyroscopeValues = null;
+    }
 
     private void waveUpdataRoutine(int type ,float mx, float my, float mz) {
 
@@ -883,6 +937,7 @@ public class MotionXYChartBuilder extends Activity {
         * 参数3 ：模式 可选数据变化的刷新频率
         * */
         sm.registerListener(myAccelerometerListener, sm.getDefaultSensor(Sensor.TYPE_LINEAR_ACCELERATION), SensorDelay);
+        mEnableWave1to6 = true;
     }
     private void enableOrientationWave() {
         if (!InitSerise2) {
@@ -942,6 +997,7 @@ public class MotionXYChartBuilder extends Activity {
             magneticFieldValues = null;
             accelerometerValues = null;
         }
+        mEnableWave1to6 = true;
     }
     private void disableAccWave(){
         if (EnableSerise1) {
@@ -949,6 +1005,7 @@ public class MotionXYChartBuilder extends Activity {
             datarenderer2.setColor(SeriesColor[0]);
             datarenderer3.setColor(SeriesColor[0]);
         }
+        mEnableWave1to6 = false;
     }
     private void disableOrientationWave(){
         if (EnableSerise4) {
@@ -956,6 +1013,7 @@ public class MotionXYChartBuilder extends Activity {
             datarenderer5.setColor(SeriesColor[0]);
             datarenderer6.setColor(SeriesColor[0]);
         }
+        mEnableWave1to6 = false;
     }
     private String saveStringFormat(XYSeries series,int index){
         double y;
@@ -965,6 +1023,151 @@ public class MotionXYChartBuilder extends Activity {
         if(D)Log.i(TAG, "xyseries str=" + str );
         return str;
     }
+
+    void FusionProcess(SensorEvent sensorEvent)
+    {
+            if(fusiontask.EnableMag){
+                if(accelerometerValues != null && magneticFieldValues != null
+                        && GyroscopeValues != null){
+                    String str1 = "accel = "+accelerometerValues[0] + "=="+accelerometerValues[1]
+                            + "=="+accelerometerValues[2] + "\n";
+
+                    String str2 = "mag = "+magneticFieldValues[0] + "=="+magneticFieldValues[1]
+                            + "2="+magneticFieldValues[2] + "\n";
+                    String str3 ;
+
+                    if(fusiontask.Fusion_Task(accelerometerValues,magneticFieldValues,GyroscopeValues))
+                    {
+                        if(M)Log.d(TAG, "test3 --"+"Fusion_Task = " + (sensorEvent.timestamp - timestamp));
+                        timestamp = sensorEvent.timestamp;
+                        if(M) Log.d(TAG, str1 + str2);
+                        str1 = "test3 --"+"liner accel = "+fusiontask.thisSV_9DOF_GBY_KALMAN.fAccGl[0] + "=="+fusiontask.thisSV_9DOF_GBY_KALMAN.fAccGl[1]
+                                + "=="+fusiontask.thisSV_9DOF_GBY_KALMAN.fAccGl[2] + "\n";
+                        str2 = "test3 --"+"roll = "+fusiontask.thisSV_9DOF_GBY_KALMAN.fPhiPl + "pitch="+fusiontask.thisSV_9DOF_GBY_KALMAN.fThePl
+                                + "yaw="+fusiontask.thisSV_9DOF_GBY_KALMAN.fPsiPl+"compass="+fusiontask.thisSV_9DOF_GBY_KALMAN.fRhoPl+ "\n";
+
+                        if(M) Log.d(TAG, str1 + str2);
+                    }
+                    magneticFieldValues = null;
+                    accelerometerValues = null;
+                    GyroscopeValues = null;
+                }
+            }else {
+                if(accelerometerValues != null && GyroscopeValues != null)
+                {
+/*                        String str1 = "accel = "+accelerometerValues[0] + "=="+accelerometerValues[1]
+                                + "=="+accelerometerValues[2] + "\n";
+
+                        String str2 ;
+                        String str3 = "Gyro = "+GyroscopeValues[0] + "=="+GyroscopeValues[1]
+                                + "=="+GyroscopeValues[2] + "\n";*/
+/*                        float[] Q = new float[9];
+                        float[] AG = new float[3];
+                        // This timestep's delta rotation to be multiplied by the current rotation
+                        // after computing it from the gyro sample data.
+                        if (timestamp != 0) {
+                            final float dT = (sensorEvent.timestamp - timestamp) * NS2S;
+                            // Axis of the rotation sample, not normalized yet.
+                            float axisX = GyroscopeValues[0];
+                            float axisY = GyroscopeValues[1];
+                            float axisZ = GyroscopeValues[2];
+                            // Calculate the angular speed of the sample
+                            float omegaMagnitude = (float) Math.sqrt(axisX * axisX + axisY * axisY + axisZ * axisZ);
+                            // Normalize the rotation vector if it's big enough to get the axis
+                            if (omegaMagnitude > EPSILON) {
+                                axisX /= omegaMagnitude;
+                                axisY /= omegaMagnitude;
+                                axisZ /= omegaMagnitude;
+                            }
+                            // Integrate around this axis with the angular speed by the timestep
+                            // in order to get a delta rotation from this sample over the timestep
+                            // We will convert this axis-angle representation of the delta rotation
+                            // into a quaternion before turning it into the rotation matrix.
+                            float thetaOverTwo = omegaMagnitude * dT / 2.0f;
+                            float sinThetaOverTwo = (float) Math.sin(thetaOverTwo);
+                            float cosThetaOverTwo = (float) Math.cos(thetaOverTwo);
+                            deltaRotationVector[0] = sinThetaOverTwo * axisX;
+                            deltaRotationVector[1] = sinThetaOverTwo * axisY;
+                            deltaRotationVector[2] = sinThetaOverTwo * axisZ;
+                            deltaRotationVector[3] = cosThetaOverTwo;
+                        }
+                        timestamp = sensorEvent.timestamp;
+                        //float[] deltaRotationMatrix = new float[9];
+                        SensorManager.getRotationMatrixFromVector(Q,GyroscopeValues);
+
+                        //str1 = "Q0="+Q[0]+"Q1="+Q[1]+"Q2="+Q[2]+"Q3="+Q[3]+"\n";
+                        AG[0] = Q[0] * accelerometerValues[0] + Q[3] * accelerometerValues[1] + Q[6] * accelerometerValues[2];
+                        AG[1] = Q[1] * accelerometerValues[0] + Q[4] * accelerometerValues[1] + Q[7] * accelerometerValues[2];
+                        AG[2] = Q[2] * accelerometerValues[0] + Q[5] * accelerometerValues[1] + Q[8] * accelerometerValues[2];
+                        str2 = "AG0="+ AG[0]+"AG1="+ AG[1]+"AG2="+ AG[2] + "\n";*/
+                    //if(M) Log.d(TAG, str3 + str2);//str1
+
+/*                        for(int i=0;i < accelerometerValues.length;i++)
+                        {
+                            accelerometerValues[i] = accelerometerValues[i] / SensorManager.STANDARD_GRAVITY;
+                        }
+*//*                        accelerometerValues[0] = 1;
+                        accelerometerValues[1] = 0;
+                        accelerometerValues[2] = 0;*//*
+                                str3 = "Gyro = "+GyroscopeValues[0] + "=="+GyroscopeValues[1]
+                                + "=="+GyroscopeValues[2] + "\n";
+                        //if(M) Log.d(TAG, str3);//str1
+                        for(int i=0;i < GyroscopeValues.length;i++)
+                        {
+                            GyroscopeValues[i] = (float) Math.toDegrees(GyroscopeValues[i]);
+                            //GyroscopeValues[i] = 0;
+                        }
+                        str1 = "accel = "+accelerometerValues[0] + "=="+accelerometerValues[1]
+                                + "=="+accelerometerValues[2] + "\n";
+
+
+                         str3 = "Gyro = "+GyroscopeValues[0] + "=="+GyroscopeValues[1]
+                                + "=="+GyroscopeValues[2] + "\n";*/
+                    //if(M) Log.d(TAG, str3);//str1
+                    if(fusiontask.Fusion_Task(accelerometerValues,magneticFieldValues,GyroscopeValues))
+                    {
+                        if(M)Log.d(TAG, "test2 --"+"Fusion_Task = " + (sensorEvent.timestamp - timestamp));
+                        timestamp = sensorEvent.timestamp;
+                        //if(M) Log.d(TAG, str1 + str3);//str1
+
+                        //interval=timestamp/(1E9F); 	//nanosecond to seconds
+                        interval=1.677E-2F; 	//nanosecond to seconds
+
+                        for(int i=0;i<3;i++)
+                        {
+                            fin_vel[i] = init_vel[i] + (fusiontask.thisSV_6DOF_GY_KALMAN.fAccGl[i] * sm.GRAVITY_EARTH *interval);
+                            distance[i] += (init_vel[i]*interval)+0.5f*fusiontask.thisSV_6DOF_GY_KALMAN.fAccGl[i]* sm.GRAVITY_EARTH *interval*interval;
+                            init_vel[i] = fin_vel[i];
+                        }
+
+                        waveUpdataRoutine(Sensor.TYPE_LINEAR_ACCELERATION,fusiontask.thisSV_6DOF_GY_KALMAN.fAccGl[0],
+                                fusiontask.thisSV_6DOF_GY_KALMAN.fAccGl[1], fusiontask.thisSV_6DOF_GY_KALMAN.fAccGl[2]);
+
+/*                            waveUpdataRoutine(Sensor.TYPE_ORIENTATION,fusiontask.thisSV_6DOF_GY_KALMAN.fPhiPl/100,
+                                    fusiontask.thisSV_6DOF_GY_KALMAN.fThePl/100,fusiontask.thisSV_6DOF_GY_KALMAN.fPsiPl/100);*/
+                        waveUpdataRoutine(Sensor.TYPE_ORIENTATION,fin_vel[0],fin_vel[1],fin_vel[2]);
+
+/*                            waveUpdataRoutine(Sensor.TYPE_ORIENTATION,fusiontask.thisAccel.fGsAvg[0],fusiontask.thisAccel.fGsAvg[1],
+                                    fusiontask.thisAccel.fGsAvg[2]);*/
+
+
+                        String str1 = "liner accel = "+fusiontask.thisSV_6DOF_GY_KALMAN.fAccGl[0] + "=="+fusiontask.thisSV_6DOF_GY_KALMAN.fAccGl[1]
+                                + "=="+fusiontask.thisSV_6DOF_GY_KALMAN.fAccGl[2] + "\n";
+                        String str2 = "roll = "+fusiontask.thisSV_6DOF_GY_KALMAN.fPhiPl + "pitch="+fusiontask.thisSV_6DOF_GY_KALMAN.fThePl
+                                + "yaw="+fusiontask.thisSV_6DOF_GY_KALMAN.fPsiPl+"compass="+fusiontask.thisSV_6DOF_GY_KALMAN.fRhoPl+ "\n";
+
+                        if(false) Log.d(TAG, str1 + str2);
+                    }
+                    accelerometerValues = null;
+                    GyroscopeValues = null;
+
+                }
+            }
+
+    }
+
+
+
     /*
      * SensorEventListener接口的实现，需要实现两个方法
      * 方法1 onSensorChanged 当数据变化的时候被触发调用
@@ -1019,7 +1222,8 @@ public class MotionXYChartBuilder extends Activity {
                 Log.i(TAG, "\n Laccel_y " + Y_longitudinal);
                 Log.i(TAG, "\n Laccel_z " + Z_vertical);*/
                 //if(M)Log.d(TAG, "TYPE_LINEAR_ACCELERATION");
-                //waveUpdataRoutine(Sensor.TYPE_LINEAR_ACCELERATION,sensorEvent.values[0], sensorEvent.values[1], sensorEvent.values[2]);
+                if(mEnableWave1to6)
+                    waveUpdataRoutine(Sensor.TYPE_LINEAR_ACCELERATION,sensorEvent.values[0], sensorEvent.values[1], sensorEvent.values[2]);
             }
 
             if (sensorEvent.sensor.getType() == Sensor.TYPE_ORIENTATION) {
@@ -1035,7 +1239,8 @@ public class MotionXYChartBuilder extends Activity {
                 Log.i(TAG, "\n pitch " + Y_pitch);
                 Log.i(TAG, "\n roll " + Z_roll);*/
                 //if(M)Log.d(TAG, "TYPE_ORIENTATION");
-                //waveUpdataRoutine(Sensor.TYPE_ORIENTATION,sensorEvent.values[0], sensorEvent.values[1], sensorEvent.values[2]);
+                if(mEnableWave1to6)
+                    waveUpdataRoutine(Sensor.TYPE_ORIENTATION,sensorEvent.values[0], sensorEvent.values[1], sensorEvent.values[2]);
             }
             if (sensorEvent.sensor.getType() == Sensor.TYPE_ACCELEROMETER) {
 
@@ -1076,146 +1281,10 @@ public class MotionXYChartBuilder extends Activity {
             }
             if(UsedFusion)
             {
-                if(fusiontask.EnableMag){
-                    if(accelerometerValues != null && magneticFieldValues != null
-                            && GyroscopeValues != null){
-                        String str1 = "accel = "+accelerometerValues[0] + "=="+accelerometerValues[1]
-                                + "=="+accelerometerValues[2] + "\n";
-
-                        String str2 = "mag = "+magneticFieldValues[0] + "=="+magneticFieldValues[1]
-                                + "2="+magneticFieldValues[2] + "\n";
-                        String str3 ;
-
-                        if(fusiontask.Fusion_Task(accelerometerValues,magneticFieldValues,GyroscopeValues))
-                        {
-                            if(M)Log.d(TAG, "test3 --"+"Fusion_Task = " + (sensorEvent.timestamp - timestamp));
-                            timestamp = sensorEvent.timestamp;
-                            if(M) Log.d(TAG, str1 + str2);
-                            str1 = "test3 --"+"liner accel = "+fusiontask.thisSV_9DOF_GBY_KALMAN.fAccGl[0] + "=="+fusiontask.thisSV_9DOF_GBY_KALMAN.fAccGl[1]
-                                    + "=="+fusiontask.thisSV_9DOF_GBY_KALMAN.fAccGl[2] + "\n";
-                            str2 = "test3 --"+"roll = "+fusiontask.thisSV_9DOF_GBY_KALMAN.fPhiPl + "pitch="+fusiontask.thisSV_9DOF_GBY_KALMAN.fThePl
-                                    + "yaw="+fusiontask.thisSV_9DOF_GBY_KALMAN.fPsiPl+"compass="+fusiontask.thisSV_9DOF_GBY_KALMAN.fRhoPl+ "\n";
-
-                            if(M) Log.d(TAG, str1 + str2);
-                        }
-                        magneticFieldValues = null;
-                        accelerometerValues = null;
-                        GyroscopeValues = null;
-                    }
-                }else {
-                    if(accelerometerValues != null && GyroscopeValues != null)
-                    {
-/*                        String str1 = "accel = "+accelerometerValues[0] + "=="+accelerometerValues[1]
-                                + "=="+accelerometerValues[2] + "\n";
-
-                        String str2 ;
-                        String str3 = "Gyro = "+GyroscopeValues[0] + "=="+GyroscopeValues[1]
-                                + "=="+GyroscopeValues[2] + "\n";*/
-/*                        float[] Q = new float[9];
-                        float[] AG = new float[3];
-                        // This timestep's delta rotation to be multiplied by the current rotation
-                        // after computing it from the gyro sample data.
-                        if (timestamp != 0) {
-                            final float dT = (sensorEvent.timestamp - timestamp) * NS2S;
-                            // Axis of the rotation sample, not normalized yet.
-                            float axisX = GyroscopeValues[0];
-                            float axisY = GyroscopeValues[1];
-                            float axisZ = GyroscopeValues[2];
-                            // Calculate the angular speed of the sample
-                            float omegaMagnitude = (float) Math.sqrt(axisX * axisX + axisY * axisY + axisZ * axisZ);
-                            // Normalize the rotation vector if it's big enough to get the axis
-                            if (omegaMagnitude > EPSILON) {
-                                axisX /= omegaMagnitude;
-                                axisY /= omegaMagnitude;
-                                axisZ /= omegaMagnitude;
-                            }
-                            // Integrate around this axis with the angular speed by the timestep
-                            // in order to get a delta rotation from this sample over the timestep
-                            // We will convert this axis-angle representation of the delta rotation
-                            // into a quaternion before turning it into the rotation matrix.
-                            float thetaOverTwo = omegaMagnitude * dT / 2.0f;
-                            float sinThetaOverTwo = (float) Math.sin(thetaOverTwo);
-                            float cosThetaOverTwo = (float) Math.cos(thetaOverTwo);
-                            deltaRotationVector[0] = sinThetaOverTwo * axisX;
-                            deltaRotationVector[1] = sinThetaOverTwo * axisY;
-                            deltaRotationVector[2] = sinThetaOverTwo * axisZ;
-                            deltaRotationVector[3] = cosThetaOverTwo;
-                        }
-                        timestamp = sensorEvent.timestamp;
-                        //float[] deltaRotationMatrix = new float[9];
-                        SensorManager.getRotationMatrixFromVector(Q,GyroscopeValues);
-
-                        //str1 = "Q0="+Q[0]+"Q1="+Q[1]+"Q2="+Q[2]+"Q3="+Q[3]+"\n";
-                        AG[0] = Q[0] * accelerometerValues[0] + Q[3] * accelerometerValues[1] + Q[6] * accelerometerValues[2];
-                        AG[1] = Q[1] * accelerometerValues[0] + Q[4] * accelerometerValues[1] + Q[7] * accelerometerValues[2];
-                        AG[2] = Q[2] * accelerometerValues[0] + Q[5] * accelerometerValues[1] + Q[8] * accelerometerValues[2];
-                        str2 = "AG0="+ AG[0]+"AG1="+ AG[1]+"AG2="+ AG[2] + "\n";*/
-                        //if(M) Log.d(TAG, str3 + str2);//str1
-
-/*                        for(int i=0;i < accelerometerValues.length;i++)
-                        {
-                            accelerometerValues[i] = accelerometerValues[i] / SensorManager.STANDARD_GRAVITY;
-                        }
-*//*                        accelerometerValues[0] = 1;
-                        accelerometerValues[1] = 0;
-                        accelerometerValues[2] = 0;*//*
-                                str3 = "Gyro = "+GyroscopeValues[0] + "=="+GyroscopeValues[1]
-                                + "=="+GyroscopeValues[2] + "\n";
-                        //if(M) Log.d(TAG, str3);//str1
-                        for(int i=0;i < GyroscopeValues.length;i++)
-                        {
-                            GyroscopeValues[i] = (float) Math.toDegrees(GyroscopeValues[i]);
-                            //GyroscopeValues[i] = 0;
-                        }
-                        str1 = "accel = "+accelerometerValues[0] + "=="+accelerometerValues[1]
-                                + "=="+accelerometerValues[2] + "\n";
-
-
-                         str3 = "Gyro = "+GyroscopeValues[0] + "=="+GyroscopeValues[1]
-                                + "=="+GyroscopeValues[2] + "\n";*/
-                        //if(M) Log.d(TAG, str3);//str1
-                        if(fusiontask.Fusion_Task(accelerometerValues,magneticFieldValues,GyroscopeValues))
-                        {
-                            if(M)Log.d(TAG, "test2 --"+"Fusion_Task = " + (sensorEvent.timestamp - timestamp));
-                                timestamp = sensorEvent.timestamp;
-                            //if(M) Log.d(TAG, str1 + str3);//str1
-
-                            //interval=timestamp/(1E9F); 	//nanosecond to seconds
-                            interval=1.677E-2F; 	//nanosecond to seconds
-
-                            for(int i=0;i<3;i++)
-                            {
-                                fin_vel[i] = init_vel[i] + (fusiontask.thisSV_6DOF_GY_KALMAN.fAccGl[i] * sm.GRAVITY_EARTH *interval);
-                                distance[i] += (init_vel[i]*interval)+0.5f*fusiontask.thisSV_6DOF_GY_KALMAN.fAccGl[i]* sm.GRAVITY_EARTH *interval*interval;
-                                init_vel[i] = fin_vel[i];
-                            }
-
-                            waveUpdataRoutine(Sensor.TYPE_LINEAR_ACCELERATION,fusiontask.thisSV_6DOF_GY_KALMAN.fAccGl[0],
-                                    fusiontask.thisSV_6DOF_GY_KALMAN.fAccGl[1], fusiontask.thisSV_6DOF_GY_KALMAN.fAccGl[2]);
-
-/*                            waveUpdataRoutine(Sensor.TYPE_ORIENTATION,fusiontask.thisSV_6DOF_GY_KALMAN.fPhiPl/100,
-                                    fusiontask.thisSV_6DOF_GY_KALMAN.fThePl/100,fusiontask.thisSV_6DOF_GY_KALMAN.fPsiPl/100);*/
-                            waveUpdataRoutine(Sensor.TYPE_ORIENTATION,fin_vel[0],fin_vel[1],fin_vel[2]);
-
-/*                            waveUpdataRoutine(Sensor.TYPE_ORIENTATION,fusiontask.thisAccel.fGsAvg[0],fusiontask.thisAccel.fGsAvg[1],
-                                    fusiontask.thisAccel.fGsAvg[2]);*/
-
-
-                            String str1 = "liner accel = "+fusiontask.thisSV_6DOF_GY_KALMAN.fAccGl[0] + "=="+fusiontask.thisSV_6DOF_GY_KALMAN.fAccGl[1]
-                                    + "=="+fusiontask.thisSV_6DOF_GY_KALMAN.fAccGl[2] + "\n";
-                            String str2 = "roll = "+fusiontask.thisSV_6DOF_GY_KALMAN.fPhiPl + "pitch="+fusiontask.thisSV_6DOF_GY_KALMAN.fThePl
-                                    + "yaw="+fusiontask.thisSV_6DOF_GY_KALMAN.fPsiPl+"compass="+fusiontask.thisSV_6DOF_GY_KALMAN.fRhoPl+ "\n";
-
-                            if(false) Log.d(TAG, str1 + str2);
-                        }
-                        accelerometerValues = null;
-                        GyroscopeValues = null;
-
-                    }
-                }
-
-
+                FusionProcess(sensorEvent);
             }
+
+
 
         }
 
