@@ -45,15 +45,18 @@ public class kalman_filter{
     float r;        /* measure noise convariance */
     float p[][] = new float[2][2];  /* estimated error convariance,2x2 [p0 p1; p2 p3] */
     float gain[] = new float[2];  /* 2x1 */
+
+    float init_x1 = 1,init_p1 = 0;
+    float init_x[] = {1,0},init_p[][] = {{1,0},{0,1}};
     
-    void kalman1_init(float init_x, float init_p) 
+    public void kalman1_init()
     {
-        x1 = init_x;
-        p1 = init_p;
+        x1 = init_x1;
+        p1 = init_p1;
         A1 = 1;
         H1 = 1;
-        q1 = 2e-2f;//10e-6;  /* predict noise convariance */
-        r1 = 5e-2f;//10e-5;  /* measure error convariance */
+        q1 = 2e+1f;//10e-6;  /* predict noise convariance */
+        r1 = 5e+2f;//10e-5;  /* measure error convariance */
     }
 
     /*
@@ -66,14 +69,14 @@ public class kalman_filter{
      * @retval  
      *   Estimated result
      */
-    float kalman1_filter(float z_measure)
+    public float kalman1_filter(float z_measure)
     {
         /* Predict */
         x1 = A1 * x1;
         p1 = A1 * A1 * p1 + q1;  /* p(n|n-1)=A^2*p(n-1|n-1)+q */
     
         /* Measurement */
-        gain1 = p1 * H1 / (p1 * H1 * H1 + r);
+        gain1 = p1 * H1 / (p1 * H1 * H1 + r1);
         x1 = x1 + gain1 * (z_measure - H1 * x1);
         p1 = (1 - gain1 * H1) * p1;
     
@@ -94,7 +97,7 @@ public class kalman_filter{
      * @outputs
      * @retval
      */
-    void kalman2_init(float init_x[], float init_p[][])
+    public void kalman2_init()
     {
         x[0]    = init_x[0];
         x[1]    = init_x[1];
@@ -113,7 +116,7 @@ public class kalman_filter{
         //q       = {{10e-6,0}, {0,10e-6}};  /* measure noise convariance */
         q[0]    = 10e-7f;
         q[1]    = 10e-7f;
-        r       = 10e-7f;  /* estimated error convariance */
+        r       = 10e-5f;  /* estimated error convariance */
     }
 
     /*
@@ -129,7 +132,7 @@ public class kalman_filter{
      * @retval
      *   Return value is equals to x[0], so maybe angle or velocity.
      */
-    float kalman2_filter(float z_measure)
+    public float kalman2_filter(float z_measure)
     {
         float temp0 = 0.0f;
         float temp1 = 0.0f;

@@ -54,6 +54,8 @@ import com.fusion.Orientation;
 import com.fusion.types.Fquaternion;
 import com.google.android.gms.appindexing.AppIndex;
 import com.google.android.gms.common.api.GoogleApiClient;
+import com.kalmanfilter.kalman_filter;
+import com.kalmanfilter.kalmanfilter;
 
 import java.io.File;
 import java.util.List;
@@ -153,7 +155,8 @@ public class MotionXYChartBuilder extends Activity {
     private float magneticFieldValues[] = new float[3];
     private float GyroscopeValues[] = new float[3];
 
-    private boolean UsedFusion,mEnableWave1to6=false;
+    private boolean UsedFusion = false,mEnableWave1to6=false,UsedKalmanfilter = false,UsedMySensorFusion = false;;
+    private int KalmanfilterTpye = 0;
 
     float interval;
     float fin_vel[] = new float[3];
@@ -180,6 +183,9 @@ public class MotionXYChartBuilder extends Activity {
     FusionTask fusiontask = new FusionTask();
 
     private Sensor msensor,asensor,gsensor;
+
+    private kalmanfilter kf;
+    private kalman_filter kf1;
 
     /**
      * Enable or disable the add data to series widgets
@@ -600,12 +606,21 @@ public class MotionXYChartBuilder extends Activity {
             case 4:
             case 5:
             case 6:
-                EnableWave1to6(x);
+                    EnableWave1to6(x);
                 break;
             case 8:{
-                EnableWaveFusion();
+                    EnableWaveFusion();
                 break;
             }
+            case 9:
+
+            case 10:
+            case 11:
+                    EnableWaveKalman(x);
+                break;
+            case 12:
+                    EnableMySensorFusion();
+                break;
             default:
                 break;
         }
@@ -641,10 +656,17 @@ public class MotionXYChartBuilder extends Activity {
                     DisableWave1to6(x);
                 break;
 
-            case 8:{
-                    DisableWaveFusion();
-                break;
+            case 8: {
+                DisableWaveFusion();
             }
+                break;
+            case 9:
+            case 10:
+            case 11:
+                    DisableWaveKalman();
+                break;
+            case 12:
+                  DisableMySensorFusion();
             default:
                 break;
         }
@@ -810,6 +832,7 @@ public class MotionXYChartBuilder extends Activity {
         enableAccWave();
         enableOrientationWave();
     }
+
     void DisableWaveFusion()
     {
         UsedFusion = false;
@@ -817,6 +840,51 @@ public class MotionXYChartBuilder extends Activity {
         magneticFieldValues = null;
         accelerometerValues = null;
         GyroscopeValues = null;
+    }
+    void EnableWaveKalman(int x)
+    {
+        UsedKalmanfilter = true;
+
+        KalmanfilterTpye = x;
+        if(KalmanfilterTpye == 9){
+            kf = new kalmanfilter();
+            kf.KalmanFilter(0.02f);
+        }else if(KalmanfilterTpye == 10){
+            kf1 = new kalman_filter();
+            kf1.kalman1_init();
+        }else if(KalmanfilterTpye == 11){
+            kf1 = new kalman_filter();
+            kf1.kalman2_init();
+        }
+        sm.registerListener(myAccelerometerListener, sm.getDefaultSensor(Sensor.TYPE_ACCELEROMETER), SensorDelay);
+        sm.registerListener(myAccelerometerListener, sm.getDefaultSensor(Sensor.TYPE_GYROSCOPE), SensorDelay);
+        accelerometerValues = null;
+        GyroscopeValues = null;
+
+        enableAccWave();
+
+    }
+
+    void DisableWaveKalman()
+    {
+        UsedKalmanfilter = false;
+        sm.unregisterListener(myAccelerometerListener);
+    }
+
+    void EnableMySensorFusion()
+    {
+        UsedMySensorFusion = true;
+        sm.registerListener(myAccelerometerListener, sm.getDefaultSensor(Sensor.TYPE_ACCELEROMETER), SensorDelay);
+        sm.registerListener(myAccelerometerListener, sm.getDefaultSensor(Sensor.TYPE_GYROSCOPE), SensorDelay);
+        accelerometerValues = null;
+        GyroscopeValues = null;
+
+        enableAccWave();
+    }
+    void DisableMySensorFusion()
+    {
+        UsedMySensorFusion = false;
+        sm.unregisterListener(myAccelerometerListener);
     }
 
     private void waveUpdataRoutine(int type ,float mx, float my, float mz) {
@@ -1055,51 +1123,7 @@ public class MotionXYChartBuilder extends Activity {
             }else {
                 if(accelerometerValues != null && GyroscopeValues != null)
                 {
-/*                        String str1 = "accel = "+accelerometerValues[0] + "=="+accelerometerValues[1]
-                                + "=="+accelerometerValues[2] + "\n";
 
-                        String str2 ;
-                        String str3 = "Gyro = "+GyroscopeValues[0] + "=="+GyroscopeValues[1]
-                                + "=="+GyroscopeValues[2] + "\n";*/
-/*                        float[] Q = new float[9];
-                        float[] AG = new float[3];
-                        // This timestep's delta rotation to be multiplied by the current rotation
-                        // after computing it from the gyro sample data.
-                        if (timestamp != 0) {
-                            final float dT = (sensorEvent.timestamp - timestamp) * NS2S;
-                            // Axis of the rotation sample, not normalized yet.
-                            float axisX = GyroscopeValues[0];
-                            float axisY = GyroscopeValues[1];
-                            float axisZ = GyroscopeValues[2];
-                            // Calculate the angular speed of the sample
-                            float omegaMagnitude = (float) Math.sqrt(axisX * axisX + axisY * axisY + axisZ * axisZ);
-                            // Normalize the rotation vector if it's big enough to get the axis
-                            if (omegaMagnitude > EPSILON) {
-                                axisX /= omegaMagnitude;
-                                axisY /= omegaMagnitude;
-                                axisZ /= omegaMagnitude;
-                            }
-                            // Integrate around this axis with the angular speed by the timestep
-                            // in order to get a delta rotation from this sample over the timestep
-                            // We will convert this axis-angle representation of the delta rotation
-                            // into a quaternion before turning it into the rotation matrix.
-                            float thetaOverTwo = omegaMagnitude * dT / 2.0f;
-                            float sinThetaOverTwo = (float) Math.sin(thetaOverTwo);
-                            float cosThetaOverTwo = (float) Math.cos(thetaOverTwo);
-                            deltaRotationVector[0] = sinThetaOverTwo * axisX;
-                            deltaRotationVector[1] = sinThetaOverTwo * axisY;
-                            deltaRotationVector[2] = sinThetaOverTwo * axisZ;
-                            deltaRotationVector[3] = cosThetaOverTwo;
-                        }
-                        timestamp = sensorEvent.timestamp;
-                        //float[] deltaRotationMatrix = new float[9];
-                        SensorManager.getRotationMatrixFromVector(Q,GyroscopeValues);
-
-                        //str1 = "Q0="+Q[0]+"Q1="+Q[1]+"Q2="+Q[2]+"Q3="+Q[3]+"\n";
-                        AG[0] = Q[0] * accelerometerValues[0] + Q[3] * accelerometerValues[1] + Q[6] * accelerometerValues[2];
-                        AG[1] = Q[1] * accelerometerValues[0] + Q[4] * accelerometerValues[1] + Q[7] * accelerometerValues[2];
-                        AG[2] = Q[2] * accelerometerValues[0] + Q[5] * accelerometerValues[1] + Q[8] * accelerometerValues[2];
-                        str2 = "AG0="+ AG[0]+"AG1="+ AG[1]+"AG2="+ AG[2] + "\n";*/
                     //if(M) Log.d(TAG, str3 + str2);//str1
 
 /*                        for(int i=0;i < accelerometerValues.length;i++)
@@ -1145,10 +1169,10 @@ public class MotionXYChartBuilder extends Activity {
 
 /*                            waveUpdataRoutine(Sensor.TYPE_ORIENTATION,fusiontask.thisSV_6DOF_GY_KALMAN.fPhiPl/100,
                                     fusiontask.thisSV_6DOF_GY_KALMAN.fThePl/100,fusiontask.thisSV_6DOF_GY_KALMAN.fPsiPl/100);*/
-                        waveUpdataRoutine(Sensor.TYPE_ORIENTATION,fin_vel[0],fin_vel[1],fin_vel[2]);
+/*                        waveUpdataRoutine(Sensor.TYPE_ORIENTATION,fin_vel[0],fin_vel[1],fin_vel[2]);*/
 
-/*                            waveUpdataRoutine(Sensor.TYPE_ORIENTATION,fusiontask.thisAccel.fGsAvg[0],fusiontask.thisAccel.fGsAvg[1],
-                                    fusiontask.thisAccel.fGsAvg[2]);*/
+                            waveUpdataRoutine(Sensor.TYPE_ORIENTATION,fusiontask.thisAccel.fGsAvg[0],fusiontask.thisAccel.fGsAvg[1],
+                                    fusiontask.thisAccel.fGsAvg[2]);
 
 
                         String str1 = "liner accel = "+fusiontask.thisSV_6DOF_GY_KALMAN.fAccGl[0] + "=="+fusiontask.thisSV_6DOF_GY_KALMAN.fAccGl[1]
@@ -1166,8 +1190,96 @@ public class MotionXYChartBuilder extends Activity {
 
     }
 
+    void KalmanfilterProcess()
+    {
+        if(accelerometerValues != null && GyroscopeValues != null)
+        {
+
+            float ax_m, az_m;
+            float angle_acc,angle_kalman;
+            ax_m = accelerometerValues[1];
+            az_m = accelerometerValues[2];
+
+            angle_acc = (float) Math.atan2(-az_m,ax_m);  //atan2((double)(-acc[2]),(double)acc[0]);
+
+            if(KalmanfilterTpye == 9){
+                kf.kalman_update(ax_m, az_m);
+                kf.state_update((float) GyroscopeValues[0]);
+                angle_kalman = kf.getAngle();
+            }else if(KalmanfilterTpye == 10){
+                angle_kalman = kf1.kalman1_filter(angle_acc);
+            }else{
+                angle_kalman = kf1.kalman2_filter(angle_acc);
+            }
+
+            waveUpdataRoutine(Sensor.TYPE_LINEAR_ACCELERATION,angle_acc,angle_kalman,angle_kalman);
+            accelerometerValues  = null;
+            GyroscopeValues = null;
 
 
+        }
+    }
+
+    void MysSensorFusion(SensorEvent sensorEvent)
+    {
+        if(accelerometerValues != null && GyroscopeValues != null)
+        {
+/*                        String str1 = "accel = "+accelerometerValues[0] + "=="+accelerometerValues[1]
+                                + "=="+accelerometerValues[2] + "\n";
+
+                        String str2 ;
+                        String str3 = "Gyro = "+GyroscopeValues[0] + "=="+GyroscopeValues[1]
+                                + "=="+GyroscopeValues[2] + "\n";*/
+                        float[] Q = new float[9];
+                        float[] AG = new float[3];
+                        // This timestep's delta rotation to be multiplied by the current rotation
+                        // after computing it from the gyro sample data.
+                        if (timestamp != 0) {
+                            final float dT = (sensorEvent.timestamp - timestamp) * NS2S;
+                            // Axis of the rotation sample, not normalized yet.
+                            float axisX = GyroscopeValues[0];
+                            float axisY = GyroscopeValues[1];
+                            float axisZ = GyroscopeValues[2];
+                            // Calculate the angular speed of the sample
+                            float omegaMagnitude = (float) Math.sqrt(axisX * axisX + axisY * axisY + axisZ * axisZ);
+                            // Normalize the rotation vector if it's big enough to get the axis
+                            if (omegaMagnitude > EPSILON) {
+                                axisX /= omegaMagnitude;
+                                axisY /= omegaMagnitude;
+                                axisZ /= omegaMagnitude;
+                            }
+                            // Integrate around this axis with the angular speed by the timestep
+                            // in order to get a delta rotation from this sample over the timestep
+                            // We will convert this axis-angle representation of the delta rotation
+                            // into a quaternion before turning it into the rotation matrix.
+                            float thetaOverTwo = omegaMagnitude * dT / 2.0f;
+                            float sinThetaOverTwo = (float) Math.sin(thetaOverTwo);
+                            float cosThetaOverTwo = (float) Math.cos(thetaOverTwo);
+                            deltaRotationVector[0] = sinThetaOverTwo * axisX;
+                            deltaRotationVector[1] = sinThetaOverTwo * axisY;
+                            deltaRotationVector[2] = sinThetaOverTwo * axisZ;
+                            deltaRotationVector[3] = cosThetaOverTwo;
+                        }
+                        timestamp = sensorEvent.timestamp;
+                        //float[] deltaRotationMatrix = new float[9];
+                        SensorManager.getRotationMatrixFromVector(Q,GyroscopeValues);
+
+                        //str1 = "Q0="+Q[0]+"Q1="+Q[1]+"Q2="+Q[2]+"Q3="+Q[3]+"\n";
+                        AG[0] = Q[0] * accelerometerValues[0] + Q[3] * accelerometerValues[1] + Q[6] * accelerometerValues[2];
+                        AG[1] = Q[1] * accelerometerValues[0] + Q[4] * accelerometerValues[1] + Q[7] * accelerometerValues[2];
+                        AG[2] = Q[2] * accelerometerValues[0] + Q[5] * accelerometerValues[1] + Q[8] * accelerometerValues[2];
+                        // str2 = "AG0="+ AG[0]+"AG1="+ AG[1]+"AG2="+ AG[2] + "\n";
+                        waveUpdataRoutine(Sensor.TYPE_LINEAR_ACCELERATION,fusiontask.thisSV_6DOF_GY_KALMAN.fAccGl[0],
+                                fusiontask.thisSV_6DOF_GY_KALMAN.fAccGl[1], fusiontask.thisSV_6DOF_GY_KALMAN.fAccGl[2]);
+
+            /*                            waveUpdataRoutine(Sensor.TYPE_ORIENTATION,fusiontask.thisSV_6DOF_GY_KALMAN.fPhiPl/100,
+                                                fusiontask.thisSV_6DOF_GY_KALMAN.fThePl/100,fusiontask.thisSV_6DOF_GY_KALMAN.fPsiPl/100);*/
+            /*                        waveUpdataRoutine(Sensor.TYPE_ORIENTATION,fin_vel[0],fin_vel[1],fin_vel[2]);*/
+
+                        waveUpdataRoutine(Sensor.TYPE_ORIENTATION,fusiontask.thisAccel.fGsAvg[0],fusiontask.thisAccel.fGsAvg[1],
+                                fusiontask.thisAccel.fGsAvg[2]);
+        }
+    }
     /*
      * SensorEventListener接口的实现，需要实现两个方法
      * 方法1 onSensorChanged 当数据变化的时候被触发调用
@@ -1183,81 +1295,47 @@ public class MotionXYChartBuilder extends Activity {
         //复写onSensorChanged方法
         public void onSensorChanged(SensorEvent sensorEvent) {
             //if(M)Log.i(TAG, "onSensorChanged");
-/*            if (sensorEvent.sensor.getType() == Sensor.TYPE_ACCELEROMETER) {
-*//*                if(D)Log.i(TAG, "TYPE_ACCELEROMETER");
-
-                //图解中已经解释三个值的含义
-                float X_lateral = sensorEvent.values[0];
-                float Y_longitudinal = sensorEvent.values[1];
-                float Z_vertical = sensorEvent.values[2];
-
-
-                if(D)Log.i(TAG, "\n accel_x " + X_lateral);
-                if(D)Log.i(TAG, "\n accel_y " + Y_longitudinal);
-                if(D)Log.i(TAG, "\n accel_z " + Z_vertical);*//*
-            }*/
             if (sensorEvent.sensor.getType() == Sensor.TYPE_GRAVITY) {
-/*                if(D)Log.i(TAG, "TYPE_GRAVITY");
-
-                //图解中已经解释三个值的含义
-                float X_lateral = sensorEvent.values[0];
-                float Y_longitudinal = sensorEvent.values[1];
-                float Z_vertical = sensorEvent.values[2];
-
-                waveUpdataRoutine(sensorEvent.values[0], sensorEvent.values[1], sensorEvent.values[2]);
-                if(D)Log.i(TAG, "\n gaccel_x " + X_lateral);
-                if(D)Log.i(TAG, "\n gaccel_y " + Y_longitudinal);
-                if(D)Log.i(TAG, "\n gaccel_z " + Z_vertical);*/
+/*                if(D)Log.i(TAG, "TYPE_GRAVITY");*/
             }
             if (sensorEvent.sensor.getType() == Sensor.TYPE_LINEAR_ACCELERATION) {
-/*                Log.i(TAG, "TYPE_LINEAR_ACCELERATION");
-
-                //图解中已经解释三个值的含义
-                float X_lateral = sensorEvent.values[0];
-                float Y_longitudinal = sensorEvent.values[1];
-                float Z_vertical = sensorEvent.values[2];
-
-
-                Log.i(TAG, "\n Laccel_x " + X_lateral);
-                Log.i(TAG, "\n Laccel_y " + Y_longitudinal);
-                Log.i(TAG, "\n Laccel_z " + Z_vertical);*/
-                //if(M)Log.d(TAG, "TYPE_LINEAR_ACCELERATION");
-                if(mEnableWave1to6)
-                    waveUpdataRoutine(Sensor.TYPE_LINEAR_ACCELERATION,sensorEvent.values[0], sensorEvent.values[1], sensorEvent.values[2]);
+/*                Log.i(TAG, "TYPE_LINEAR_ACCELERATION");*/
+//                if(mEnableWave1to6)
+//                    waveUpdataRoutine(Sensor.TYPE_LINEAR_ACCELERATION,sensorEvent.values[0], sensorEvent.values[1], sensorEvent.values[2]);
             }
 
             if (sensorEvent.sensor.getType() == Sensor.TYPE_ORIENTATION) {
-/*                Log.i(TAG, "TYPE_ORIENTATION");
-
-                //图解中已经解释三个值的含义
-                float X_heading = sensorEvent.values[0];
-                float Y_pitch = sensorEvent.values[1];
-                float Z_roll = sensorEvent.values[2];
-
-
-                Log.i(TAG, "\n heading " + X_heading);
-                Log.i(TAG, "\n pitch " + Y_pitch);
-                Log.i(TAG, "\n roll " + Z_roll);*/
-                //if(M)Log.d(TAG, "TYPE_ORIENTATION");
-                if(mEnableWave1to6)
-                    waveUpdataRoutine(Sensor.TYPE_ORIENTATION,sensorEvent.values[0], sensorEvent.values[1], sensorEvent.values[2]);
+/*                Log.i(TAG, "TYPE_ORIENTATION");*/
+//                if(mEnableWave1to6)
+//                   waveUpdataRoutine(Sensor.TYPE_ORIENTATION,sensorEvent.values[0], sensorEvent.values[1], sensorEvent.values[2]);
             }
             if (sensorEvent.sensor.getType() == Sensor.TYPE_ACCELEROMETER) {
+                if(UsedFusion || UseOrientation || UsedKalmanfilter)
+                {
+                    accelerometerValues = sensorEvent.values;
+                    if(false)Log.d(TAG, "test2 --"+"TYPE_ACCELEROMETER=" + (sensorEvent.timestamp - ta));
+                    ta = sensorEvent.timestamp;
+                }
 
-                accelerometerValues = sensorEvent.values;
-                if(M)Log.d(TAG, "test2 --"+"TYPE_ACCELEROMETER=" + (sensorEvent.timestamp - ta));
-                ta = sensorEvent.timestamp;
             }
             if (sensorEvent.sensor.getType() == Sensor.TYPE_MAGNETIC_FIELD) {
-                magneticFieldValues = sensorEvent.values;
-                if(false)Log.d(TAG, "TYPE_MAGNETIC_FIELD = " + (sensorEvent.timestamp - tm));
-                tm = sensorEvent.timestamp;
+                if(UsedFusion || UseOrientation)
+                {
+                    magneticFieldValues = sensorEvent.values;
+                    if(false)Log.d(TAG, "TYPE_MAGNETIC_FIELD = " + (sensorEvent.timestamp - tm));
+                    tm = sensorEvent.timestamp;
+                }
+
             }
             if(sensorEvent.sensor.getType() == Sensor.TYPE_GYROSCOPE)
             {
-                GyroscopeValues = sensorEvent.values;
-                if(M)Log.d(TAG, "test2 --"+"TYPE_GYROSCOPE = " + (sensorEvent.timestamp - tg));
-                tg = sensorEvent.timestamp;
+                if(UsedFusion || UsedKalmanfilter)
+                {
+                    GyroscopeValues = sensorEvent.values;
+                    if(false)Log.d(TAG, "test2 --"+"TYPE_GYROSCOPE = " + (sensorEvent.timestamp - tg));
+                    tg = sensorEvent.timestamp;
+                }
+
 
             }
 
@@ -1275,13 +1353,18 @@ public class MotionXYChartBuilder extends Activity {
                     accelerometerValues = null;
                     magneticFieldValues = null;
                 }
-
-
-
             }
             if(UsedFusion)
             {
                 FusionProcess(sensorEvent);
+            }
+            if(UsedKalmanfilter)
+            {
+                KalmanfilterProcess();
+            }
+            if(UsedMySensorFusion)
+            {
+                MysSensorFusion(sensorEvent);
             }
 
 

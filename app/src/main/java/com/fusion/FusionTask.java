@@ -21,7 +21,7 @@ public class FusionTask extends Types {
      private boolean D = true;
      private String TAG = "FusionTask";
 
-     public final boolean EnableMag = true;
+     public final boolean EnableMag = false;
 
      private static int iCounter = 0;		// decimation counter range 0 to OVERSAMPLE_RATIO-1
 
