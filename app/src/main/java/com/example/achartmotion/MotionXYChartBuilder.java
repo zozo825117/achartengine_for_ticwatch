@@ -54,6 +54,8 @@ import com.fusion.Orientation;
 import com.fusion.types.Fquaternion;
 import com.google.android.gms.appindexing.AppIndex;
 import com.google.android.gms.common.api.GoogleApiClient;
+import com.kalmanfilter.kalman_filter;
+import com.kalmanfilter.kalmanfilter;
 
 import java.io.File;
 import java.util.List;
@@ -153,7 +155,8 @@ public class MotionXYChartBuilder extends Activity {
     private float magneticFieldValues[] = new float[3];
     private float GyroscopeValues[] = new float[3];
 
-    private boolean UsedFusion,mEnableWave1to6=false;
+    private boolean UsedFusion,mEnableWave1to6=false,UsedKalmanfilter = false;
+    private int KalmanfilterTpye = 0;
 
     float interval;
     float fin_vel[] = new float[3];
@@ -180,6 +183,9 @@ public class MotionXYChartBuilder extends Activity {
     FusionTask fusiontask = new FusionTask();
 
     private Sensor msensor,asensor,gsensor;
+
+    private kalmanfilter kf;
+    private kalman_filter kf1;
 
     /**
      * Enable or disable the add data to series widgets
@@ -606,6 +612,12 @@ public class MotionXYChartBuilder extends Activity {
                 EnableWaveFusion();
                 break;
             }
+            case 9:
+
+            case 10:
+            case 11:
+                    EnableWaveKalman(x);
+                break;
             default:
                 break;
         }
@@ -641,10 +653,14 @@ public class MotionXYChartBuilder extends Activity {
                     DisableWave1to6(x);
                 break;
 
-            case 8:{
+            case 8:
                     DisableWaveFusion();
                 break;
-            }
+            case 9:
+            case 10:
+            case 11:
+                    DisableWaveKalman();
+                break;
             default:
                 break;
         }
@@ -818,6 +834,36 @@ public class MotionXYChartBuilder extends Activity {
         accelerometerValues = null;
         GyroscopeValues = null;
     }
+    void EnableWaveKalman(int x)
+    {
+        UsedKalmanfilter = true;
+
+        KalmanfilterTpye = x;
+        if(KalmanfilterTpye == 9){
+            kf = new kalmanfilter();
+            kf.KalmanFilter(0.02f);
+        }else if(KalmanfilterTpye == 10){
+            kf1 = new kalman_filter();
+            kf1.kalman1_init();
+        }else if(KalmanfilterTpye == 11){
+            kf1 = new kalman_filter();
+            kf1.kalman2_init();
+        }
+        sm.registerListener(myAccelerometerListener, sm.getDefaultSensor(Sensor.TYPE_ACCELEROMETER), SensorDelay);
+        sm.registerListener(myAccelerometerListener, sm.getDefaultSensor(Sensor.TYPE_GYROSCOPE), SensorDelay);
+        accelerometerValues = null;
+        GyroscopeValues = null;
+
+        enableAccWave();
+
+    }
+
+    void DisableWaveKalman()
+    {
+        UsedKalmanfilter = false;
+        sm.unregisterListener(myAccelerometerListener);
+    }
+
 
     private void waveUpdataRoutine(int type ,float mx, float my, float mz) {
 
@@ -1166,8 +1212,35 @@ public class MotionXYChartBuilder extends Activity {
 
     }
 
+    void KalmanfilterProcess()
+    {
+        if(accelerometerValues != null && GyroscopeValues != null)
+        {
+
+            float ax_m, az_m;
+            float angle_acc,angle_kalman;
+            ax_m = accelerometerValues[1];
+            az_m = accelerometerValues[2];
+
+            angle_acc = (float) Math.atan2(-az_m,ax_m);  //atan2((double)(-acc[2]),(double)acc[0]);
+
+            if(KalmanfilterTpye == 9){
+                kf.kalman_update(ax_m, az_m);
+                kf.state_update((float) GyroscopeValues[0]);
+                angle_kalman = kf.getAngle();
+            }else if(KalmanfilterTpye == 10){
+                angle_kalman = kf1.kalman1_filter(angle_acc);
+            }else{
+                angle_kalman = kf1.kalman2_filter(angle_acc);
+            }
+
+            waveUpdataRoutine(Sensor.TYPE_LINEAR_ACCELERATION,angle_acc,angle_kalman,angle_kalman);
+            accelerometerValues  = null;
+            GyroscopeValues = null;
 
 
+        }
+    }
     /*
      * SensorEventListener接口的实现，需要实现两个方法
      * 方法1 onSensorChanged 当数据变化的时候被触发调用
@@ -1183,81 +1256,44 @@ public class MotionXYChartBuilder extends Activity {
         //复写onSensorChanged方法
         public void onSensorChanged(SensorEvent sensorEvent) {
             //if(M)Log.i(TAG, "onSensorChanged");
-/*            if (sensorEvent.sensor.getType() == Sensor.TYPE_ACCELEROMETER) {
-*//*                if(D)Log.i(TAG, "TYPE_ACCELEROMETER");
-
-                //图解中已经解释三个值的含义
-                float X_lateral = sensorEvent.values[0];
-                float Y_longitudinal = sensorEvent.values[1];
-                float Z_vertical = sensorEvent.values[2];
-
-
-                if(D)Log.i(TAG, "\n accel_x " + X_lateral);
-                if(D)Log.i(TAG, "\n accel_y " + Y_longitudinal);
-                if(D)Log.i(TAG, "\n accel_z " + Z_vertical);*//*
-            }*/
             if (sensorEvent.sensor.getType() == Sensor.TYPE_GRAVITY) {
-/*                if(D)Log.i(TAG, "TYPE_GRAVITY");
-
-                //图解中已经解释三个值的含义
-                float X_lateral = sensorEvent.values[0];
-                float Y_longitudinal = sensorEvent.values[1];
-                float Z_vertical = sensorEvent.values[2];
-
-                waveUpdataRoutine(sensorEvent.values[0], sensorEvent.values[1], sensorEvent.values[2]);
-                if(D)Log.i(TAG, "\n gaccel_x " + X_lateral);
-                if(D)Log.i(TAG, "\n gaccel_y " + Y_longitudinal);
-                if(D)Log.i(TAG, "\n gaccel_z " + Z_vertical);*/
+/*                if(D)Log.i(TAG, "TYPE_GRAVITY");*/
             }
             if (sensorEvent.sensor.getType() == Sensor.TYPE_LINEAR_ACCELERATION) {
-/*                Log.i(TAG, "TYPE_LINEAR_ACCELERATION");
-
-                //图解中已经解释三个值的含义
-                float X_lateral = sensorEvent.values[0];
-                float Y_longitudinal = sensorEvent.values[1];
-                float Z_vertical = sensorEvent.values[2];
-
-
-                Log.i(TAG, "\n Laccel_x " + X_lateral);
-                Log.i(TAG, "\n Laccel_y " + Y_longitudinal);
-                Log.i(TAG, "\n Laccel_z " + Z_vertical);*/
-                //if(M)Log.d(TAG, "TYPE_LINEAR_ACCELERATION");
-                if(mEnableWave1to6)
-                    waveUpdataRoutine(Sensor.TYPE_LINEAR_ACCELERATION,sensorEvent.values[0], sensorEvent.values[1], sensorEvent.values[2]);
+/*                Log.i(TAG, "TYPE_LINEAR_ACCELERATION");*/
+//                if(mEnableWave1to6)
+//                    waveUpdataRoutine(Sensor.TYPE_LINEAR_ACCELERATION,sensorEvent.values[0], sensorEvent.values[1], sensorEvent.values[2]);
             }
 
             if (sensorEvent.sensor.getType() == Sensor.TYPE_ORIENTATION) {
-/*                Log.i(TAG, "TYPE_ORIENTATION");
-
-                //图解中已经解释三个值的含义
-                float X_heading = sensorEvent.values[0];
-                float Y_pitch = sensorEvent.values[1];
-                float Z_roll = sensorEvent.values[2];
-
-
-                Log.i(TAG, "\n heading " + X_heading);
-                Log.i(TAG, "\n pitch " + Y_pitch);
-                Log.i(TAG, "\n roll " + Z_roll);*/
-                //if(M)Log.d(TAG, "TYPE_ORIENTATION");
-                if(mEnableWave1to6)
-                    waveUpdataRoutine(Sensor.TYPE_ORIENTATION,sensorEvent.values[0], sensorEvent.values[1], sensorEvent.values[2]);
+/*                Log.i(TAG, "TYPE_ORIENTATION");*/
+//                if(mEnableWave1to6)
+//                   waveUpdataRoutine(Sensor.TYPE_ORIENTATION,sensorEvent.values[0], sensorEvent.values[1], sensorEvent.values[2]);
             }
             if (sensorEvent.sensor.getType() == Sensor.TYPE_ACCELEROMETER) {
-
-                accelerometerValues = sensorEvent.values;
-                if(M)Log.d(TAG, "test2 --"+"TYPE_ACCELEROMETER=" + (sensorEvent.timestamp - ta));
-                ta = sensorEvent.timestamp;
+                if(UsedFusion || UseOrientation || UsedKalmanfilter)
+                {
+                    accelerometerValues = sensorEvent.values;
+                    if(false)Log.d(TAG, "test2 --"+"TYPE_ACCELEROMETER=" + (sensorEvent.timestamp - ta));
+                    ta = sensorEvent.timestamp;
+                }
             }
             if (sensorEvent.sensor.getType() == Sensor.TYPE_MAGNETIC_FIELD) {
-                magneticFieldValues = sensorEvent.values;
-                if(false)Log.d(TAG, "TYPE_MAGNETIC_FIELD = " + (sensorEvent.timestamp - tm));
-                tm = sensorEvent.timestamp;
+                if(UsedFusion || UseOrientation)
+                {
+                    magneticFieldValues = sensorEvent.values;
+                    if(false)Log.d(TAG, "TYPE_MAGNETIC_FIELD = " + (sensorEvent.timestamp - tm));
+                    tm = sensorEvent.timestamp;
+                }
             }
             if(sensorEvent.sensor.getType() == Sensor.TYPE_GYROSCOPE)
             {
-                GyroscopeValues = sensorEvent.values;
-                if(M)Log.d(TAG, "test2 --"+"TYPE_GYROSCOPE = " + (sensorEvent.timestamp - tg));
-                tg = sensorEvent.timestamp;
+                if(UsedFusion || UsedKalmanfilter)
+                {
+                    GyroscopeValues = sensorEvent.values;
+                    if(false)Log.d(TAG, "test2 --"+"TYPE_GYROSCOPE = " + (sensorEvent.timestamp - tg));
+                    tg = sensorEvent.timestamp;
+                }
 
             }
 
@@ -1282,6 +1318,10 @@ public class MotionXYChartBuilder extends Activity {
             if(UsedFusion)
             {
                 FusionProcess(sensorEvent);
+            }
+            if(UsedKalmanfilter)
+            {
+                KalmanfilterProcess();
             }
 
 
