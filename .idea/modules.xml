@@ -3,6 +3,7 @@
   <component name="ProjectModuleManager">
     <modules>
       <module fileurl="file://$PROJECT_DIR$/achartengine_for_ticwatch.iml" filepath="$PROJECT_DIR$/achartengine_for_ticwatch.iml" />
+      <module fileurl="file://E:\zozo-pc\work\AndroidStudioProjects\achartengine_for_ticwatch\achartengine_for_ticwatch.iml" filepath="E:\zozo-pc\work\AndroidStudioProjects\achartengine_for_ticwatch\achartengine_for_ticwatch.iml" />
       <module fileurl="file://$PROJECT_DIR$/app/app.iml" filepath="$PROJECT_DIR$/app/app.iml" />
     </modules>
   </component>

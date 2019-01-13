@@ -1091,7 +1091,10 @@ public class MotionXYChartBuilder extends Activity {
         if(D)Log.i(TAG, "xyseries str=" + str );
         return str;
     }
-
+    /**
+     * fusion task.
+     *
+     */
     void FusionProcess(SensorEvent sensorEvent)
     {
             if(fusiontask.EnableMag){
@@ -1189,7 +1192,10 @@ public class MotionXYChartBuilder extends Activity {
             }
 
     }
-
+    /**
+     * Kalman filter test process.
+     *
+     */
     void KalmanfilterProcess()
     {
         if(accelerometerValues != null && GyroscopeValues != null)
@@ -1219,7 +1225,11 @@ public class MotionXYChartBuilder extends Activity {
 
         }
     }
-
+    /**
+     * 标准的android的旋转矩阵.
+     *
+     * @param sensorEvent  sensor event
+     */
     void MysSensorFusion(SensorEvent sensorEvent)
     {
         if(accelerometerValues != null && GyroscopeValues != null)
